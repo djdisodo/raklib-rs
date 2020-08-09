@@ -34,6 +34,9 @@ use bytes::{BytesMut, Bytes, Buf, BufMut};
 use std::io::Error;
 use std::net::SocketAddr;
 use crate::protocol::{Encode, Decode};
+use bytes::buf::BufExt;
+use std::time::{SystemTime, Duration};
+use std::ops::Add;
 
 pub trait Payload: Debug + Encode + Decode {
 	const ID: u8;
@@ -56,5 +59,49 @@ impl<T: Buf> GetAddress for T {
 impl<T: BufMut> PutAddress for T {
 	fn put_address(&mut self, address: SocketAddr) {
 		unimplemented!()
+	}
+}
+
+trait GetString {
+	fn get_string(&mut self) -> String;
+}
+
+trait PutStr {
+	fn put_str(&mut self, v: &str);
+}
+
+impl<T: Buf> GetString for T {
+	fn get_string(&mut self) -> String {
+		let length = self.get_u16();
+		let bytes = self.take(length as usize);
+		String::from_utf8(bytes.bytes().to_vec()).expect("failed to parse as utf8")
+	}
+}
+
+impl<T: BufMut> PutStr for T {
+	fn put_str(&mut self, v: &str) {
+		let bytes = v.as_bytes();
+		self.put_u16(bytes.len() as u16);
+		self.put_slice(bytes);
+	}
+}
+
+trait GetTime {
+	fn get_time(&mut self) -> SystemTime;
+}
+
+trait PutTime {
+	fn put_time(&mut self, time: SystemTime);
+}
+
+impl<T: Buf> GetTime for T {
+	fn get_time(&mut self) -> SystemTime {
+		SystemTime::UNIX_EPOCH + Duration::from_millis(self.get_u64()) // TODO is millis?
+	}
+}
+
+impl<T: BufMut> PutTime for T {
+	fn put_time(&mut self, time: SystemTime) {
+		self.put_u64(time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros() as u64);
 	}
 }

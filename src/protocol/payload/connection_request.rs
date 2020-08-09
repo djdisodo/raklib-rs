@@ -1,11 +1,11 @@
-use std::time::Instant;
+use std::time::SystemTime;
 use crate::protocol::{Payload, Encode, Decode};
 use crate::protocol::message_identifiers::ID_CONNECTION_REQUEST;
 
 #[derive(Debug)]
 pub struct ConnectionRequest {
 	pub client_id: u64,
-	pub send_ping_time: Instant,
+	pub send_ping_time: SystemTime,
 	pub use_security: bool
 }
 

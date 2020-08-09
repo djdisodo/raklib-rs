@@ -2,12 +2,12 @@ use std::ops::{Deref, DerefMut};
 use crate::protocol::payload::offline_message::OfflineMessage;
 use crate::protocol::{Payload, Encode, Decode};
 use crate::protocol::message_identifiers::ID_UNCONNECTED_PONG;
-use std::time::Instant;
+use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct UnconnectedPong {
 	pub offline_message: OfflineMessage,
-	pub send_ping_time: Instant,
+	pub send_ping_time: SystemTime,
 	pub server_id: u64,
 	pub server_name: String
 }

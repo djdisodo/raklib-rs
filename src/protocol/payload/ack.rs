@@ -1,5 +1,6 @@
 use crate::protocol::payload::AcknowledgePacket;
 use crate::protocol::{Payload, Encode, Decode};
+use std::ops::Deref;
 
 #[derive(Default, Debug, Deref, DerefMut)]
 pub struct ACK {
@@ -12,12 +13,14 @@ impl Payload for ACK {
 
 impl Encode for ACK {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		unimplemented!()
+		(*self).encode(serializer);
 	}
 }
 
 impl Decode for ACK {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+		Self {
+			acknowledge: AcknowledgePacket::decode(serializer)
+		}
 	}
 }

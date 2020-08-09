@@ -1,6 +1,10 @@
 use std::mem::size_of;
 
 pub const SIZE: usize = size_of::<u8>(); // size of message identifier
+
+pub fn read_from(buffer: &[u8]) -> u8 {
+	buffer[0]
+}
 //From https://github.com/OculusVR/RakNet/blob/master/Source/MessageIdentifiers.h
 
 //

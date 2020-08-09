@@ -1,5 +1,5 @@
-mod packet_payload;
-pub use packet_payload::PacketPayload;
+mod payload;
+pub use payload::Payload;
+
 mod packet;
-mod raw_payload;
 pub mod message_identifiers;

@@ -1,3 +1,6 @@
+#![feature(in_band_lifetimes)]
+#[macro_use] extern crate derive_deref;
+
 pub mod protocol;
 
 #[cfg(test)]

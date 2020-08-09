@@ -23,13 +23,13 @@ impl Datagram {
 }
 
 impl Encode for Datagram {
-	fn encode(&self, serializer: &mut Vec<u8>) {
+	fn encode(&self, _serializer: &mut Vec<u8>) {
 		unimplemented!()
 	}
 }
 
 impl Decode for Datagram {
-	fn decode(serializer: &mut &[u8]) -> Self {
+	fn decode(_serializer: &mut &[u8]) -> Self {
 		unimplemented!()
 	}
 }

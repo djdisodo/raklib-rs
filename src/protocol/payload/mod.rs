@@ -27,19 +27,19 @@ pub use connected_pong::ConnectedPong;
 pub use connection_request::ConnectionRequest;
 pub use connection_request_accepted::ConnectionRequestAccepted;
 pub use disconnection_notification::DisconnectionNotification;
-
+pub use incompatible_protocol_version::IncompatibleProtocolVersion;
 
 use std::fmt::Debug;
-use bytes::{BytesMut, Bytes, Buf, BufMut};
-use std::io::Error;
+use bytes::{Buf, BufMut};
+
 use std::net::SocketAddr;
-use crate::protocol::{Encode, Decode};
+use crate::protocol::{Encode, Decode, MessageIdentifiers};
 use bytes::buf::BufExt;
 use std::time::{SystemTime, Duration};
-use std::ops::Add;
+
 
 pub trait Payload: Debug + Encode + Decode {
-	const ID: u8;
+	const ID: MessageIdentifiers;
 }
 
 trait GetAddress {
@@ -47,7 +47,7 @@ trait GetAddress {
 }
 
 trait PutAddress {
-	fn put_address(&mut self, address: SocketAddr);
+	fn put_address(&mut self, address: &SocketAddr);
 }
 
 impl<T: Buf> GetAddress for T {
@@ -57,7 +57,7 @@ impl<T: Buf> GetAddress for T {
 }
 
 impl<T: BufMut> PutAddress for T {
-	fn put_address(&mut self, address: SocketAddr) {
+	fn put_address(&mut self, _address: &SocketAddr) {
 		unimplemented!()
 	}
 }
@@ -91,7 +91,7 @@ trait GetTime {
 }
 
 trait PutTime {
-	fn put_time(&mut self, time: SystemTime);
+	fn put_time(&mut self, time: &SystemTime);
 }
 
 impl<T: Buf> GetTime for T {
@@ -101,7 +101,7 @@ impl<T: Buf> GetTime for T {
 }
 
 impl<T: BufMut> PutTime for T {
-	fn put_time(&mut self, time: SystemTime) {
+	fn put_time(&mut self, time: &SystemTime) {
 		self.put_u64(time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_micros() as u64);
 	}
 }

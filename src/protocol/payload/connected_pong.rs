@@ -1,6 +1,6 @@
 use std::time::SystemTime;
-use crate::protocol::{Payload, Encode, Decode};
-use crate::protocol::message_identifiers::ID_CONNECTED_PONG;
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use crate::protocol::payload::{PutTime, GetTime};
 
 #[derive(Debug)]
 pub struct ConnectedPong {
@@ -9,17 +9,21 @@ pub struct ConnectedPong {
 }
 
 impl Payload for ConnectedPong {
-	const ID: u8 = ID_CONNECTED_PONG;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTED_PONG;
 }
 
 impl Encode for ConnectedPong {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		unimplemented!()
+		serializer.put_time(&self.send_ping_time);
+		serializer.put_time(&self.send_pong_time);
 	}
 }
 
 impl Decode for ConnectedPong {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+		Self {
+			send_ping_time: serializer.get_time(),
+			send_pong_time: serializer.get_time()
+		}
 	}
 }

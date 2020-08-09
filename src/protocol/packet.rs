@@ -16,7 +16,7 @@ impl<T: Payload> Packet<T> {
 
 impl<T: Payload> Decode for Packet<T> {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		if T::ID != serializer.get_u8() {
+		if T::ID as u8 != serializer.get_u8() {
 			panic!("message identifier doesn't match");
 		}
 		Self {
@@ -27,7 +27,7 @@ impl<T: Payload> Decode for Packet<T> {
 
 impl<T: Payload> Encode for Packet<T> {
 	fn encode(&self, mut serializer: &mut Vec<u8>) {
-		serializer.put_u8(T::ID);
+		serializer.put_u8(T::ID as u8);
 		self.payload.encode(&mut serializer);
 	}
 }

@@ -1,21 +1,21 @@
 use crate::protocol::{Payload, Encode, Decode};
-use crate::protocol::message_identifiers::ID_DISCONNECTION_NOTIFICATION;
+use crate::protocol::MessageIdentifiers;
 
 #[derive(Default, Debug)]
 pub struct DisconnectionNotification;
 
 impl Payload for DisconnectionNotification {
-	const ID: u8 = ID_DISCONNECTION_NOTIFICATION;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
 }
 
 impl Encode for DisconnectionNotification {
-	fn encode(&self, serializer: &mut Vec<u8>) {
+	fn encode(&self, _serializer: &mut Vec<u8>) {
 		// do nothing
 	}
 }
 
 impl Decode for DisconnectionNotification {
-	fn decode(serializer: &mut &[u8]) -> Self {
+	fn decode(_serializer: &mut &[u8]) -> Self {
 		Self
 	}
 }

@@ -1,8 +1,9 @@
 use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 use crate::protocol::payload::offline_message::OfflineMessage;
-use crate::protocol::{Payload, Encode, Decode};
-use crate::protocol::message_identifiers::ID_OPEN_CONNECTION_REQUEST_2;
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use bytes::{BufMut, Buf};
+use crate::protocol::payload::{PutAddress, GetAddress};
 
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {
@@ -27,17 +28,25 @@ impl DerefMut for OpenConnectionRequest2 {
 }
 
 impl Payload for OpenConnectionRequest2 {
-	const ID: u8 = ID_OPEN_CONNECTION_REQUEST_2;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
 }
 
 impl Encode for OpenConnectionRequest2 {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		unimplemented!()
+		(**self).encode(serializer);
+		serializer.put_address(&self.server_address);
+		serializer.put_u16(self.mtu_size);
+		serializer.put_u64(self.client_id)
 	}
 }
 
 impl Decode for OpenConnectionRequest2 {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+		Self {
+			offline_message: OfflineMessage::decode(serializer),
+			server_address: serializer.get_address(),
+			mtu_size: serializer.get_u16(),
+			client_id: serializer.get_u64()
+		}
 	}
 }

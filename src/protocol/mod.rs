@@ -1,13 +1,18 @@
-mod payload;
+pub mod payload;
+mod packet_reliability;
 mod datagram;
 mod encapsulated_packet;
+mod split_packet_info;
 
 pub use payload::Payload;
+pub use packet_reliability::PacketReliability;
 pub use datagram::Datagram;
 pub use encapsulated_packet::EncapsulatedPacket;
+pub use split_packet_info::SplitPacketInfo;
+pub use message_identifiers::MessageIdentifiers;
 
 mod packet;
-pub mod message_identifiers;
+mod message_identifiers;
 
 pub trait Encode {
 	fn encode(&self, serializer: &mut Vec<u8>);

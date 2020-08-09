@@ -1,5 +1,6 @@
 use crate::protocol::payload::AcknowledgePacket;
-use crate::protocol::{Payload, Encode, Decode};
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+
 
 #[derive(Default, Debug, Deref, DerefMut)]
 pub struct NACK {
@@ -7,17 +8,19 @@ pub struct NACK {
 }
 
 impl Payload for NACK {
-	const ID: u8 = 0xa0;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_NACK;
 }
 
 impl Encode for NACK {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		unimplemented!()
+		(**self).encode(serializer);
 	}
 }
 
 impl Decode for NACK {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+		Self {
+			acknowledge: AcknowledgePacket::decode(serializer)
+		}
 	}
 }

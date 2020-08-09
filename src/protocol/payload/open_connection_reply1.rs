@@ -1,7 +1,7 @@
 use crate::protocol::payload::offline_message::OfflineMessage;
 use std::ops::{Deref, DerefMut};
-use crate::protocol::{Payload, Encode, Decode};
-use crate::protocol::message_identifiers::ID_OPEN_CONNECTION_REPLY_1;
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use bytes::{BufMut, Buf};
 
 #[derive(Default, Debug)]
 pub struct OpenConnectionReply1 {
@@ -37,17 +37,25 @@ impl DerefMut for OpenConnectionReply1 {
 }
 
 impl Payload for OpenConnectionReply1 {
-	const ID: u8 = ID_OPEN_CONNECTION_REPLY_1;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_OPEN_CONNECTION_REPLY_1;
 }
 
 impl Encode for OpenConnectionReply1 {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		unimplemented!()
+		(**self).encode(serializer);
+		serializer.put_u64(self.server_id);
+		serializer.put_u8(self.server_security as u8);
+		serializer.put_u16(self.mtu_size);
 	}
 }
 
 impl Decode for OpenConnectionReply1 {
 	fn decode(serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+		Self {
+			offline_message: OfflineMessage::decode(serializer),
+			server_id: serializer.get_u64(),
+			server_security: serializer.get_u8() != 0,
+			mtu_size: serializer.get_u16()
+		}
 	}
 }

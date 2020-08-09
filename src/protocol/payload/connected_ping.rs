@@ -1,7 +1,6 @@
-use std::time::{SystemTime, Duration};
-use crate::protocol::{Payload, Decode, Encode};
-use crate::protocol::message_identifiers::ID_CONNECTED_PING;
-use bytes::{BufMut, Buf};
+use std::time::{SystemTime};
+use crate::protocol::{Payload, Decode, Encode, MessageIdentifiers};
+
 use crate::protocol::payload::{PutTime, GetTime};
 
 #[derive(Debug)]
@@ -10,12 +9,12 @@ pub struct ConnectedPing {
 }
 
 impl Payload for ConnectedPing {
-	const ID: u8 = ID_CONNECTED_PING;
+	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTED_PING;
 }
 
 impl Encode for ConnectedPing {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		serializer.put_time(self.send_ping_time)
+		serializer.put_time(&self.send_ping_time)
 	}
 }
 

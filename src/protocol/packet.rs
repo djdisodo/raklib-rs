@@ -1,29 +1,41 @@
-use crate::protocol::Payload;
-use crate::protocol::message_identifiers;
-use bytes::{Bytes, BytesMut, BufMut, Buf};
-use std::io::Cursor;
+use crate::protocol::{Payload, Encode, Decode};
+use bytes::{BufMut, Buf};
 
-#[derive(Default, Deref, DerefMut)]
+#[derive(Deref, DerefMut)]
 pub struct Packet<T: Payload> {
     pub payload: T
 }
 
-impl<T: Payload> From<&[u8]> for Packet<T> {
-	fn from(mut buffer: &[u8]) -> Self {
-		if T::ID != buffer.get_u8() {
-			panic!("message identifier doesn't match");
-		}
+impl<T: Payload> Packet<T> {
+	pub fn wrap(payload: T) -> Self {
 		Self {
-			payload: T::decode(&mut buffer)
+			payload
 		}
 	}
 }
 
-impl<T: Payload> Into<Vec<u8>> for &Packet<T> {
-	fn into(self) -> Vec<u8> {
-		let mut buffer = Vec::new();
-		buffer.put_u8(T::ID);
-		self.payload.encode(&mut buffer);
-		buffer
+impl<T: Payload> Decode for Packet<T> {
+	fn decode(serializer: &mut &[u8]) -> Self {
+		if T::ID != serializer.get_u8() {
+			panic!("message identifier doesn't match");
+		}
+		Self {
+			payload: T::decode(serializer)
+		}
+	}
+}
+
+impl<T: Payload> Encode for Packet<T> {
+	fn encode(&self, mut serializer: &mut Vec<u8>) {
+		serializer.put_u8(T::ID);
+		self.payload.encode(&mut serializer);
+	}
+}
+
+impl<T: Payload + Default> Default for Packet<T> {
+	fn default() -> Self {
+		Self {
+			payload: T::default()
+		}
 	}
 }

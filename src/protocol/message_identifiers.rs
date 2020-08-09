@@ -26,7 +26,7 @@ pub const ID_DETECT_LOST_CONNECTIONS: u8 = 0x04;
 /// If protocol fails on server, returns ID_INCOMPATIBLE_PROTOCOL_VERSION to client
 pub const ID_OPEN_CONNECTION_REQUEST_1: u8 = 0x05;
 /// S2C: Header(1), OfflineMesageID(16), server GUID(8), HasSecurity(1), Cookie(4, if HasSecurity)
-/// , pub key (if do security is true), MTU(2). If pub key fails on client, returns ID_pub_KEY_MISMATCH
+/// , pub key (if do security is true), MTU(2). If pub key fails on client, returns ID_PUB_KEY_MISMATCH
 pub const ID_OPEN_CONNECTION_REPLY_1: u8 = 0x06;
 /// C2S: Header(1), OfflineMesageID(16), Cookie(4, if HasSecurity is true on the server), clientSupportsSecurity(1 bit),
 /// handshakeChallenge (if has security on both server and client), remoteBindingAddress(6), MTU(2), client GUID(8)
@@ -37,11 +37,11 @@ pub const ID_OPEN_CONNECTION_REPLY_2: u8 = 0x08;
 /// C2S: Header(1), GUID(8), Timestamp, HasSecurity(1), Proof(32)
 pub const ID_CONNECTION_REQUEST: u8 = 0x09;
 /// RakPeer - Remote system requires secure connections, pass a pub key to RakPeerInterface::Connect()
-pub const ID_REMOTE_SYSTEM_REQUIRES_pub_KEY: u8 = 0x0a;
+pub const ID_REMOTE_SYSTEM_REQUIRES_PUB_KEY: u8 = 0x0a;
 /// RakPeer - We passed a pub key to RakPeerInterface::Connect(), but the other system did not have security turned on
 pub const ID_OUR_SYSTEM_REQUIRES_SECURITY: u8 = 0x0b;
 /// RakPeer - Wrong pub key passed to RakPeerInterface::Connect()
-pub const ID_pub_KEY_MISMATCH: u8 = 0x0c;
+pub const ID_PUB_KEY_MISMATCH: u8 = 0x0c;
 /// RakPeer - Same as ID_ADVERTISE_SYSTEM, but intended for internal use rather than being passed to the user.
 /// Second byte indicates type. Used currently for NAT punchthrough for receiver port advertisement. See ID_NAT_ADVERTISE_RECIPIENT_PORT
 pub const ID_OUT_OF_BAND_INTERNAL: u8 = 0x0d;
@@ -285,9 +285,9 @@ pub const ID_FCM2_VERIFIED_JOIN_REJECTED: u8 = 0x5b;
 pub const ID_UDP_PROXY_GENERAL: u8 = 0x5c;
 
 /// SQLite3Plugin - execute
-pub const ID_SQLite3_EXEC: u8 = 0x5d;
+pub const ID_SQLITE3_EXEC: u8 = 0x5d;
 /// SQLite3Plugin - Remote database is unknown
-pub const ID_SQLite3_UNKNOWN_DB: u8 = 0x5e;
+pub const ID_SQLITE3_UNKNOWN_DB: u8 = 0x5e;
 /// Events happening with SQLiteClientLoggerPlugin
 pub const ID_SQLLITE_LOGGER: u8 = 0x5f;
 

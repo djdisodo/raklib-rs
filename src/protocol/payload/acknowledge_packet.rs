@@ -1,10 +1,8 @@
-use crate::protocol::payload::{Payload, Encode, Decode};
-use bytes::{Bytes, Buf, BytesMut};
-use std::error::Error;
 use bytes_addition::GetTriad;
-use std::io::Cursor;
+use crate::protocol::{Encode, Decode};
+use bytes::Buf;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AcknowledgePacket {
 	pub packets: Vec<u32>
 }

@@ -3,6 +3,8 @@
 
 pub mod protocol;
 
+pub const DEFAULT_PROTOCOL_VERSION: u8 = 6;
+
 #[cfg(test)]
 mod tests {
     #[test]

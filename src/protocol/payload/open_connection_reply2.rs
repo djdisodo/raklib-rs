@@ -4,7 +4,7 @@ use crate::protocol::{Payload, Encode, Decode};
 use crate::protocol::message_identifiers::ID_OPEN_CONNECTION_REPLY_1;
 use std::net::SocketAddr;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct OpenConnectionReply2 {
 	pub offline_message: OfflineMessage,
 	pub client_address: SocketAddr,

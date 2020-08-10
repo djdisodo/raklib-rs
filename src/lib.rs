@@ -3,6 +3,7 @@
 #[macro_use] extern crate num_enum;
 
 pub mod protocol;
+pub mod server;
 
 pub const DEFAULT_PROTOCOL_VERSION: u8 = 6;
 pub static SYSTEM_ADDRESS_COUNT: usize = 20;

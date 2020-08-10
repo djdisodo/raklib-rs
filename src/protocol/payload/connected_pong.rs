@@ -9,7 +9,7 @@ pub struct ConnectedPong {
 }
 
 impl Payload for ConnectedPong {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTED_PONG;
+	const ID: MessageIdentifiers = MessageIdentifiers::ConnectedPong;
 }
 
 impl Encode for ConnectedPong {

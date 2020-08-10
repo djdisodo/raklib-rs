@@ -14,7 +14,7 @@ pub struct NewIncomingConnection {
 }
 
 impl Payload for NewIncomingConnection {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_NEW_INCOMING_CONNECTION;
+	const ID: MessageIdentifiers = MessageIdentifiers::NewIncomingConnection;
 }
 
 impl Encode for NewIncomingConnection {

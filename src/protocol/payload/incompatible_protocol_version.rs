@@ -36,7 +36,7 @@ impl IncompatibleProtocolVersion {
 }
 
 impl Payload for IncompatibleProtocolVersion {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_INCOMPATIBLE_PROTOCOL_VERSION;
+	const ID: MessageIdentifiers = MessageIdentifiers::IncompatibleProtocolVersion;
 }
 
 impl Encode for IncompatibleProtocolVersion {

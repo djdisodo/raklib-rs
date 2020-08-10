@@ -5,7 +5,7 @@ use crate::protocol::MessageIdentifiers;
 pub struct DisconnectionNotification;
 
 impl Payload for DisconnectionNotification {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_DISCONNECTION_NOTIFICATION;
+	const ID: MessageIdentifiers = MessageIdentifiers::DisconnectionNotification;
 }
 
 impl Encode for DisconnectionNotification {

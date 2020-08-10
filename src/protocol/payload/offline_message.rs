@@ -10,7 +10,7 @@ pub struct OfflineMessage {
 impl OfflineMessage {
 	const MAGIC: [u8; 16] = [0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78];
 
-	fn is_valid(&self) -> bool {
+	pub fn is_valid(&self) -> bool {
 		self.magic == Self::MAGIC
 	}
 }
@@ -24,7 +24,7 @@ impl Encode for OfflineMessage {
 impl Decode for OfflineMessage {
 	fn decode(serializer: &mut &[u8]) -> Self {
 		let mut magic = [0; 16];
-		serializer.read(&mut magic);
+		serializer.read(&mut magic).unwrap();
 		Self {
 			magic
 		}

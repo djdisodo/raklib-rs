@@ -8,7 +8,7 @@ pub struct ACK {
 }
 
 impl Payload for ACK {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_ACK;
+	const ID: MessageIdentifiers = MessageIdentifiers::Ack;
 }
 
 impl Encode for ACK {

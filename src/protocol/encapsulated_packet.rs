@@ -84,7 +84,7 @@ impl Decode for EncapsulatedPacket {
 		}
 
 		packet.buffer = vec![0; length as usize];
-		serializer.read(&mut packet.buffer);
+		serializer.read(&mut packet.buffer).unwrap();
 
 		packet
 	}

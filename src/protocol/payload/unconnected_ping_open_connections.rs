@@ -1,4 +1,4 @@
-use crate::protocol::payload::unconnected_ping::UnconnectedPing;
+use crate::protocol::payload::UnconnectedPing;
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
 
 #[derive(Debug, Deref, DerefMut)]
@@ -7,17 +7,19 @@ pub struct UnconnectedPingOpenConnections {
 }
 
 impl Payload for UnconnectedPingOpenConnections {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_UNCONNECTED_PING_OPEN_CONNECTIONS;
+	const ID: MessageIdentifiers = MessageIdentifiers::UnconnectedPingOpenConnections;
 }
 
 impl Encode for UnconnectedPingOpenConnections {
-	fn encode(&self, _serializer: &mut Vec<u8>) {
-		unimplemented!()
+	fn encode(&self, serializer: &mut Vec<u8>) {
+		(**self).encode(serializer);
 	}
 }
 
 impl Decode for UnconnectedPingOpenConnections {
-	fn decode(_serializer: &mut &[u8]) -> Self {
-		unimplemented!()
+	fn decode(serializer: &mut &[u8]) -> Self {
+		Self {
+			unconnected_ping: UnconnectedPing::decode(serializer)
+		}
 	}
 }

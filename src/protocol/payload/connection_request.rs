@@ -12,7 +12,7 @@ pub struct ConnectionRequest {
 }
 
 impl Payload for ConnectionRequest {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTION_REQUEST;
+	const ID: MessageIdentifiers = MessageIdentifiers::ConnectionRequest;
 }
 
 impl Encode for ConnectionRequest {

@@ -26,7 +26,7 @@ impl ConnectionRequestAccepted {
 }
 
 impl Payload for ConnectionRequestAccepted {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTION_REQUEST_ACCEPTED;
+	const ID: MessageIdentifiers = MessageIdentifiers::ConnectionRequestAccepted;
 }
 
 impl Encode for ConnectionRequestAccepted {

@@ -11,4 +11,4 @@ derive_deref = "1.1.1"
 num_enum = "0.5"
 bytes = "0.5"
 bytes_addition = { path = "bytes_addition" }
-rustfix = "0.5"
+c-types = "2.0"

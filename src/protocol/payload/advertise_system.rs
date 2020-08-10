@@ -7,7 +7,7 @@ pub struct AdvertiseSystem {
 }
 
 impl Payload for AdvertiseSystem {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_ADVERTISE_SYSTEM;
+	const ID: MessageIdentifiers = MessageIdentifiers::AdvertiseSystem;
 }
 
 impl Encode for AdvertiseSystem {

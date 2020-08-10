@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
-use crate::protocol::payload::offline_message::OfflineMessage;
+use crate::protocol::payload::OfflineMessage;
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
 use bytes::{BufMut, Buf};
 use crate::protocol::payload::{PutAddress, GetAddress};
@@ -28,7 +28,7 @@ impl DerefMut for OpenConnectionRequest2 {
 }
 
 impl Payload for OpenConnectionRequest2 {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_2;
+	const ID: MessageIdentifiers = MessageIdentifiers::OpenConnectionRequest2;
 }
 
 impl Encode for OpenConnectionRequest2 {

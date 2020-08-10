@@ -1,5 +1,5 @@
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
-use crate::protocol::payload::offline_message::OfflineMessage;
+use crate::protocol::payload::OfflineMessage;
 use std::ops::{DerefMut, Deref};
 use bytes::{BufMut, Buf};
 
@@ -25,7 +25,7 @@ impl DerefMut for OpenConnectionRequest1 {
 }
 
 impl Payload for OpenConnectionRequest1 {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_OPEN_CONNECTION_REQUEST_1;
+	const ID: MessageIdentifiers = MessageIdentifiers::OpenConnectionRequest1;
 }
 
 impl Encode for OpenConnectionRequest1 {

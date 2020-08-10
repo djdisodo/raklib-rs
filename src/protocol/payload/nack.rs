@@ -8,7 +8,7 @@ pub struct NACK {
 }
 
 impl Payload for NACK {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_NACK;
+	const ID: MessageIdentifiers = MessageIdentifiers::Nack;
 }
 
 impl Encode for NACK {

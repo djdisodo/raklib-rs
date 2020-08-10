@@ -9,7 +9,7 @@ pub struct ConnectedPing {
 }
 
 impl Payload for ConnectedPing {
-	const ID: MessageIdentifiers = MessageIdentifiers::ID_CONNECTED_PING;
+	const ID: MessageIdentifiers = MessageIdentifiers::ConnectedPing;
 }
 
 impl Encode for ConnectedPing {

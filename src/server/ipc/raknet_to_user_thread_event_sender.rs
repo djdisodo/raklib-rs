@@ -1,8 +1,9 @@
 use std::sync::{Arc, Mutex};
 use std::collections::VecDeque;
-use crate::server::{ServerEvent, ServerEventListener, OpenSession, CloseSession, Encapsulated, Raw, AckNotification, ReportBandwidthStats, ReportPing};
+use crate::server::server_event::{OpenSession, CloseSession, Encapsulated, Raw, AckNotification, ReportBandwidthStats, ReportPing};
 use std::net::SocketAddr;
 use std::time::Duration;
+use crate::server::{ServerEventListener, ServerEvent};
 
 pub struct RaknetToUserThreadEventSender {
 	channel: Arc<Mutex<VecDeque<ServerEvent>>>

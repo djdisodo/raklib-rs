@@ -1,6 +1,12 @@
 
 mod raknet_to_user_thread_event_receiver;
 mod raknet_to_user_thread_event_sender;
+mod user_to_raknet_message;
+mod user_to_raknet_message_receiver;
+mod user_to_raknet_message_sender;
 
 pub use raknet_to_user_thread_event_receiver::RaknetToUserThreadEventReceiver;
 pub use raknet_to_user_thread_event_sender::RaknetToUserThreadEventSender;
+pub use user_to_raknet_message::UserToRaknetMessage;
+pub use user_to_raknet_message_receiver::UserToRaknetMessageReceiver;
+pub use user_to_raknet_message_sender::UserToRaknetMessageSender;

@@ -1,5 +1,4 @@
-use std::ops::{Deref, DerefMut};
-use crate::protocol::payload::OfflineMessage;
+use crate::protocol::payload::{OfflineMessage, OfflineMessageImpl};
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
 use std::time::SystemTime;
 use crate::protocol::payload::{PutTime, GetTime};
@@ -12,17 +11,9 @@ pub struct UnconnectedPing {
 	pub client_id: u64
 }
 
-impl Deref for UnconnectedPing {
-	type Target = OfflineMessage;
-
-	fn deref(&self) -> &Self::Target {
+impl OfflineMessageImpl for UnconnectedPing {
+	fn get_offline_message(&self) -> &OfflineMessage {
 		&self.offline_message
-	}
-}
-
-impl DerefMut for UnconnectedPing {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.offline_message
 	}
 }
 
@@ -33,7 +24,7 @@ impl Payload for UnconnectedPing {
 impl Encode for UnconnectedPing {
 	fn encode(&self, serializer: &mut Vec<u8>) {
 		serializer.put_time(&self.send_ping_time);
-		(**self).encode(serializer);
+		self.offline_message.encode(serializer);
 		serializer.put_u64(self.client_id);
 	}
 }

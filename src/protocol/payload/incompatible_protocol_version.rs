@@ -2,7 +2,7 @@ use crate::protocol::{Payload, Encode, Decode};
 use crate::protocol::MessageIdentifiers;
 use bytes::{BufMut, Buf};
 use crate::protocol::payload::offline_message::OfflineMessage;
-use std::ops::{Deref, DerefMut};
+use crate::protocol::payload::OfflineMessageImpl;
 
 #[derive(Default, Debug)]
 pub struct IncompatibleProtocolVersion {
@@ -11,17 +11,9 @@ pub struct IncompatibleProtocolVersion {
 	pub server_id: u64
 }
 
-impl Deref for IncompatibleProtocolVersion {
-	type Target = OfflineMessage;
-
-	fn deref(&self) -> &Self::Target {
+impl OfflineMessageImpl for IncompatibleProtocolVersion {
+	fn get_offline_message(&self) -> &OfflineMessage {
 		&self.offline_message
-	}
-}
-
-impl DerefMut for IncompatibleProtocolVersion {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.offline_message
 	}
 }
 
@@ -42,7 +34,7 @@ impl Payload for IncompatibleProtocolVersion {
 impl Encode for IncompatibleProtocolVersion {
 	fn encode(&self, serializer: &mut Vec<u8>) {
 		serializer.put_u8(self.protocol_version);
-		(**self).encode(serializer);
+		self.offline_message.encode(serializer);
 		serializer.put_u64(self.server_id);
 	}
 }

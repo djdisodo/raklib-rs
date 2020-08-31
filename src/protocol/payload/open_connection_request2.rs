@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
-use std::ops::{Deref, DerefMut};
-use crate::protocol::payload::OfflineMessage;
+use crate::protocol::payload::{OfflineMessage, OfflineMessageImpl};
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
 use bytes::{BufMut, Buf};
 use crate::protocol::payload::{PutAddress, GetAddress};
@@ -13,17 +12,9 @@ pub struct OpenConnectionRequest2 {
 	pub mtu_size: u16
 }
 
-impl Deref for OpenConnectionRequest2 {
-	type Target = OfflineMessage;
-
-	fn deref(&self) -> &Self::Target {
+impl OfflineMessageImpl for OpenConnectionRequest2 {
+	fn get_offline_message(&self) -> &OfflineMessage {
 		&self.offline_message
-	}
-}
-
-impl DerefMut for OpenConnectionRequest2 {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.offline_message
 	}
 }
 
@@ -33,7 +24,7 @@ impl Payload for OpenConnectionRequest2 {
 
 impl Encode for OpenConnectionRequest2 {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		(**self).encode(serializer);
+		self.offline_message.encode(serializer);
 		serializer.put_address(&self.server_address);
 		serializer.put_u16(self.mtu_size);
 		serializer.put_u64(self.client_id)

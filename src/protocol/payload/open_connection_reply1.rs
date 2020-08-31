@@ -1,4 +1,4 @@
-use crate::protocol::payload::OfflineMessage;
+use crate::protocol::payload::{OfflineMessage, OfflineMessageImpl};
 use std::ops::{Deref, DerefMut};
 use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
 use bytes::{BufMut, Buf};
@@ -22,17 +22,9 @@ impl OpenConnectionReply1 {
 	}
 }
 
-impl Deref for OpenConnectionReply1 {
-	type Target = OfflineMessage;
-
-	fn deref(&self) -> &Self::Target {
+impl OfflineMessageImpl for OpenConnectionReply1 {
+	fn get_offline_message(&self) -> &OfflineMessage {
 		&self.offline_message
-	}
-}
-
-impl DerefMut for OpenConnectionReply1 {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.offline_message
 	}
 }
 
@@ -42,7 +34,7 @@ impl Payload for OpenConnectionReply1 {
 
 impl Encode for OpenConnectionReply1 {
 	fn encode(&self, serializer: &mut Vec<u8>) {
-		(**self).encode(serializer);
+		self.offline_message.encode(serializer);
 		serializer.put_u64(self.server_id);
 		serializer.put_u8(self.server_security as u8);
 		serializer.put_u16(self.mtu_size);

@@ -1,4 +1,4 @@
-use crate::protocol::{Encode, Decode};
+use crate::protocol::{Encode, Decode, Payload};
 use bytes::BufMut;
 use std::io::Read;
 
@@ -28,5 +28,12 @@ impl Decode for OfflineMessage {
 		Self {
 			magic
 		}
+	}
+}
+
+pub trait OfflineMessageImpl: Payload {
+	fn get_offline_message(&self) -> &OfflineMessage;
+	fn is_valid(&self) -> bool {
+		self.get_offline_message().is_valid()
 	}
 }

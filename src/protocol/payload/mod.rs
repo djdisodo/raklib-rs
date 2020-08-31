@@ -30,7 +30,7 @@ pub use disconnection_notification::DisconnectionNotification;
 pub use incompatible_protocol_version::IncompatibleProtocolVersion;
 pub use nack::NACK;
 pub use new_incoming_connection::NewIncomingConnection;
-pub use offline_message::OfflineMessage;
+pub use offline_message::*;
 pub use open_connection_reply1::OpenConnectionReply1;
 pub use open_connection_reply2::OpenConnectionReply2;
 pub use open_connection_request1::OpenConnectionRequest1;

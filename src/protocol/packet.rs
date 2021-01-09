@@ -1,7 +1,7 @@
 use crate::protocol::{Payload, Encode, Decode};
 use bytes::{BufMut, Buf};
 
-#[derive(Deref, DerefMut)]
+#[derive(Deref, DerefMut, Debug)]
 pub struct Packet<T: Payload> {
     pub payload: T
 }

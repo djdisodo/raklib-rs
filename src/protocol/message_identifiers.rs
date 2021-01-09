@@ -1,7 +1,11 @@
+use num_enum::TryFromPrimitive;
+
 pub fn read_from(buffer: &[u8]) -> u8 {
 	buffer[0]
 }
 
+#[derive(Debug, Eq, PartialEq, TryFromPrimitive)]
+#[repr(u8)]
 pub enum MessageIdentifiers {
 	//From https://github.com/OculusVR/RakNet/blob/master/Source/MessageIdentifiers.h
 

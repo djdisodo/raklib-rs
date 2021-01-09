@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use crate::server::ServerEvent;
 
-pub trait ServerEventListener {
+pub trait ServerEventListener: 'static {
 	fn handle_event(&mut self, event: ServerEvent) {
 		match event {
 			ServerEvent::OpenSession(open_session) => self.open_session(

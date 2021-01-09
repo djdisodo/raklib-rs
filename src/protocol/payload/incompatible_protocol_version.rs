@@ -1,8 +1,6 @@
-use crate::protocol::{Payload, Encode, Decode};
+use crate::protocol::{Payload, Encode, Decode, OfflineMessage, OfflineMessageImpl};
 use crate::protocol::MessageIdentifiers;
 use bytes::{BufMut, Buf};
-use crate::protocol::payload::offline_message::OfflineMessage;
-use crate::protocol::payload::OfflineMessageImpl;
 
 #[derive(Default, Debug)]
 pub struct IncompatibleProtocolVersion {

@@ -2,6 +2,7 @@ pub mod payload;
 mod packet_reliability;
 mod datagram;
 mod encapsulated_packet;
+mod offline_message;
 mod split_packet_info;
 
 pub use payload::Payload;
@@ -9,6 +10,7 @@ pub use packet::Packet;
 pub use packet_reliability::PacketReliability;
 pub use datagram::Datagram;
 pub use encapsulated_packet::EncapsulatedPacket;
+pub use offline_message::*;
 pub use split_packet_info::SplitPacketInfo;
 pub use message_identifiers::MessageIdentifiers;
 

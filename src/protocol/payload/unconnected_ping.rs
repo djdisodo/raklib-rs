@@ -1,5 +1,4 @@
-use crate::protocol::payload::{OfflineMessage, OfflineMessageImpl};
-use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers, OfflineMessage, OfflineMessageImpl};
 use std::time::SystemTime;
 use crate::protocol::payload::{PutTime, GetTime};
 use bytes::{BufMut, Buf};

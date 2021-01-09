@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
-use crate::protocol::payload::{OfflineMessage, OfflineMessageImpl};
-use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers, OfflineMessage, OfflineMessageImpl};
 use bytes::{BufMut, Buf};
 use crate::protocol::payload::{PutAddress, GetAddress};
 

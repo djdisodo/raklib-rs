@@ -10,20 +10,21 @@ use std::io::ErrorKind;
 use log::debug;
 use crate::protocol::{Datagram, Packet, Decode, Encode};
 use crate::protocol::payload::{ACK, NACK};
-use std::sync::Mutex;
+use std::sync::RwLock;
 use std::rc::Rc;
 use crate::server::unconnected_message_handler::UnconnectedMessageHandler;
+use std::ops::{Deref, DerefMut};
 
-pub struct Server<'a, EventListener: ServerEventListener, PA: ProtocolAcceptor> {
+pub struct Server {
 
-	socket: Mutex<ServerSocket>,
+	pub(super) server_socket: RwLock<ServerSocket>,
 
 	server_id: u64,
 
 	sessions: Vec<Session>,
-	sessions_by_address: HashMap<SocketAddr, usize/* index in sessions */>,
+	sessions_by_address: HashMap<SocketAddr, Session/* index in sessions */>,
 
-	protocol_acceptor: PA,
+	pub(super) protocol_acceptor: Box<dyn ProtocolAcceptor>,
 
 	name: String,
 
@@ -42,56 +43,70 @@ pub struct Server<'a, EventListener: ServerEventListener, PA: ProtocolAcceptor> 
 
 	start_time: Option<Instant>,
 
-	max_mtu_size: u16,
-
 	reusable_address: SocketAddr,
 
 	next_session_id: VecDeque<usize>,
 
 	message_receiver: UserToRaknetMessageReceiver, // event_source
-	event_listener: Mutex<EventListener>,
+	event_listener: RwLock<Box<dyn ServerEventListener>>,
 
 	//trace_cleaner
 }
 
 pub struct ServerSocket {
-	socket: UdpSocket,
+	udp_socket: UdpSocket,
 	receive_bytes: usize,
 	send_bytes: usize,
-	buffer: Vec<u8>
+	buffer: Vec<u8>,
+	max_mtu_size: u16
 }
 
 impl ServerSocket {
-	pub fn send_packet(&mut self, packet: impl Encode, address: &SocketAddr) {
-		self.buffer.clear();
-		packet.encode(&mut self.buffer);
-		match self.socket.send_to(&self.buffer, address) {
-			Ok(send) => self.send_bytes += send,
-			Err(e) => debug!("{}", e)
+	fn recv_raw_packet(&mut self) -> std::io::Result<(usize, SocketAddr)> {
+		if self.buffer.capacity() != self.max_mtu_size as usize {
+			self.buffer = Vec::with_capacity(self.max_mtu_size as usize);
 		}
+		self.udp_socket.recv_from(&mut self.buffer)
 	}
 }
 
-impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventListener, PA> {
-	pub fn new(
+impl Deref for ServerSocket {
+	type Target = UdpSocket;
+
+	fn deref(&self) -> &Self::Target {
+		&self.udp_socket
+	}
+}
+
+impl DerefMut for ServerSocket {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.udp_socket
+	}
+}
+
+impl Server {
+	pub fn new<EL: ServerEventListener, PA: ProtocolAcceptor>(
 		server_id: u64,
-		socket: UdpSocket,
+		udp_socket: UdpSocket,
 		max_mtu_size: u16,
 		protocol_acceptor: PA,
 		message_receiver: UserToRaknetMessageReceiver,
-		event_listener: EventListener,
+		event_listener: EL,
 	) -> Self {
-		let socket = Mutex::new(ServerSocket {
-			socket,
+		let reusable_address = udp_socket.local_addr().unwrap();
+		let server_socket = RwLock::new(ServerSocket {
+			udp_socket,
 			receive_bytes: 0,
 			send_bytes: 0,
-			buffer: Vec::with_capacity(max_mtu_size as usize)
+			buffer: Vec::with_capacity(max_mtu_size as usize),
+			max_mtu_size
 		});
 		Self {
-			socket: socket,
+			server_socket,
 			server_id,
 			sessions_by_address: HashMap::new(),
 			sessions: Vec::new(),
+			protocol_acceptor: Box::new(protocol_acceptor) as Box<_>,
 			name: "".to_string(),
 			packet_limit: 200,
 			shutdown: false,
@@ -101,11 +116,10 @@ impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventL
 			raw_packet_filters: Vec::new(),
 			port_checking: false,
 			start_time: None,
-			max_mtu_size,
-			reusable_address: socket.local_addr().as_ref().unwrap().clone(),
+			reusable_address,
 			next_session_id: VecDeque::new(),
 			message_receiver,
-			event_listener: Mutex::new(event_listener)
+			event_listener: RwLock::new(Box::new(event_listener) as Box<_>)
 		}
 	}
 
@@ -114,11 +128,11 @@ impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventL
 	}
 
 	pub fn get_port(&self) -> u16 {
-		self.socket.local_addr().unwrap().port()
+		self.server_socket.read().unwrap().udp_socket.local_addr().unwrap().port()
 	}
 
 	pub fn get_max_mtu_size(&self) -> u16 {
-		self.max_mtu_size
+		self.server_socket.read().unwrap().max_mtu_size
 	}
 
 	pub fn get_id(&self) -> u64 {
@@ -131,27 +145,24 @@ impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventL
 
 	pub fn tick_processor(&mut self) {
 		while !self.shutdown && self.sessions.len() > 0 {
-			loop {
-				for _ in 0..100 {
-					let message = self.message_receiver.receive();
-					if self.shutdown || message.is_none() {
-						break;
-					} else {
-						self.handle_message(message.unwrap());
-					}
+			for _ in 0..100 {
+				let message = self.message_receiver.receive();
+				if self.shutdown || message.is_none() {
+					break;
+				} else {
+					//self.handle_message(message.unwrap());
 				}
-
 			}
 		}
 	}
 
-	pub fn receive_packet(&mut self) -> bool {
-		if self.buffer.capacity() != self.max_mtu_size as usize {
-			self.buffer = Vec::with_capacity(self.max_mtu_size as usize);
-		}
-		let address = match self.socket.recv_from(&mut self.buffer) {
+	fn receive_packet(&mut self) -> bool {
+
+		let mut server_socket = self.server_socket.write().unwrap();
+
+		let address = match server_socket.recv_raw_packet() {
 			Ok(t) => {
-				self.receive_bytes += t.0;
+				server_socket.receive_bytes += t.0;
 				t.1
 			},
 			Err(e) => return match e.kind() {
@@ -163,16 +174,17 @@ impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventL
 				}
 			}
 		};
+
 		match self.sessions_by_address.get_mut(&address) {
 			Some(session) => {
-				let header = self.buffer[0];
+				let header = server_socket.buffer[0];
 				if (header & Datagram::FLAG_VALID) != 0 {
 					if (header & Datagram::FLAG_ACK) != 0 {
-						session.handle_ack(Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_ack(Packet::decode(&mut server_socket.buffer.as_slice()).payload);
 					} else if (header & Datagram::FLAG_NAK) != 0 {
-						session.handle_nack(Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_nack(Packet::decode(&mut server_socket.buffer.as_slice()).payload);
 					} else {
-						session.handle_datagram(Datagram::decode(&mut self.buffer.as_slice()));
+						session.handle_datagram(Datagram::decode(&mut server_socket.buffer.as_slice()));
 					}
 				} else {
 					debug!("Ignored unconnected packet from $address due to session already opened (0x{})", format!("{:X}", header))
@@ -183,8 +195,16 @@ impl<EventListener: ServerEventListener, PA: ProtocolAcceptor> Server<'_, EventL
 			}
 		}
 		true
+	}
 
-
+	pub fn send_packet(&self, packet: impl Encode, address: &SocketAddr) {
+		let mut server_socket = self.server_socket.write().unwrap();
+		server_socket.buffer.clear();
+		packet.encode(&mut server_socket.buffer);
+		match server_socket.send_to(&server_socket.buffer, address) {
+			Ok(send) => server_socket.send_bytes += send,
+			Err(e) => debug!("{}", e)
+		}
 	}
 
 

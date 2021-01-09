@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
-use crate::protocol::payload::{OfflineMessage, PutTime, PutStr, GetTime, GetString, OfflineMessageImpl};
-use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers};
+use crate::protocol::payload::{PutTime, PutStr, GetTime, GetString};
+use crate::protocol::{Payload, Encode, Decode, MessageIdentifiers, OfflineMessage, OfflineMessageImpl};
 use std::time::SystemTime;
 use bytes::{BufMut, Buf};
 

@@ -14,6 +14,8 @@ pub enum PacketReliability {
 }
 
 impl PacketReliability {
+	pub const MAX_ORDER_CHANNELS: usize = 32;
+
 	pub fn is_reliable(&self) -> bool {
 		match self {
 			PacketReliability::Reliable => true,

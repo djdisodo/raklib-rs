@@ -6,13 +6,12 @@ use log::{info, debug};
 use crate::server::session::Session;
 use std::cmp::min;
 use std::convert::TryInto;
-use crate::server::server::ServerSocket;
 use std::sync::RwLock;
 use bytes::Buf;
 use std::any::Any;
 
 pub struct UnconnectedMessageHandler<'a> {
-	pub(super) server: &'a Server,
+	pub(super) server: &'a Server<'a>,
 }
 
 impl UnconnectedMessageHandler<'_> {
@@ -103,7 +102,7 @@ impl Handle<OpenConnectionRequest1> for UnconnectedMessageHandler<'_> {
 
 impl Handle<OpenConnectionRequest2> for UnconnectedMessageHandler<'_> {
 	fn handle(&mut self, offline_message: &OpenConnectionRequest2, address: &SocketAddr) {
-		if offline_message.server_address.port() == self.server.get_port() || !self.server.port_checking {
+		if offline_message.server_address.port() == self.server.get_port() || !self.server.get_port_checking() {
 			if offline_message.mtu_size < Session::MIN_MTU_SIZE {
 				debug!("Not creating session for {} due to bad MTU size {}", address, offline_message.mtu_size);
 				return;

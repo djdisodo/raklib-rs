@@ -1,7 +1,7 @@
 use crate::protocol::{Encode, Decode};
 use bytes::{BufMut, Buf};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SplitPacketInfo {
 	id: u16,
 	part_index: u32,

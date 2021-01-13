@@ -46,6 +46,15 @@ use bytes::buf::BufExt;
 use std::time::{SystemTime, Duration};
 use c_types::AF_INET6;
 
+pub trait PayloadExt {
+	fn get_id(&self) -> MessageIdentifiers;
+}
+
+impl<T: Payload> PayloadExt for T {
+	fn get_id(&self) -> MessageIdentifiers {
+		T::ID
+	}
+}
 
 pub trait Payload: Debug + Encode + Decode {
 	const ID: MessageIdentifiers;

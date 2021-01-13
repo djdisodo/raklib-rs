@@ -1,3 +1,4 @@
+#![feature(clamp)]
 #[macro_use] extern crate derive_deref;
 #[macro_use] extern crate num_enum;
 

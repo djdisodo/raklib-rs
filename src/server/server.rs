@@ -1,5 +1,4 @@
 use std::net::{UdpSocket, SocketAddr, IpAddr};
-use log4rs::Logger;
 use std::collections::{HashMap, VecDeque};
 use crate::server::session::Session;
 use std::time::{Duration, Instant};
@@ -137,9 +136,9 @@ impl _Server<'_> {
 				let header = self.buffer[0];
 				if (header & Datagram::FLAG_VALID) != 0 {
 					if (header & Datagram::FLAG_ACK) != 0 {
-						session.handle_ack(Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_ack(*Packet::decode(&mut self.buffer.as_slice()).payload);
 					} else if (header & Datagram::FLAG_NAK) != 0 {
-						session.handle_nack(Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_nack(*Packet::decode(&mut self.buffer.as_slice()).payload);
 					} else {
 						session.handle_datagram(Datagram::decode(&mut self.buffer.as_slice()));
 					}

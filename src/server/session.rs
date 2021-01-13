@@ -57,5 +57,7 @@ enum SessionState {
 	Connecting,
 	Connected,
 	Disconnecting,
-	Disconnected(SystemTime)
+	Disconnected {
+		disconnection_time: SystemTime
+	}
 }

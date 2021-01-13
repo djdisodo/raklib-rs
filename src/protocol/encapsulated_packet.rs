@@ -6,13 +6,13 @@ use crate::protocol::SplitPacketInfo;
 use std::convert::TryInto;
 use std::io::Read;
 
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct EncapsulatedPacket {
 	pub reliability: PacketReliability,
-	pub message_index: u32,
-	pub sequence_index: u32,
-	pub order_index: u32,
-	pub order_channel: u8,
+	pub message_index: Option<u32>,
+	pub sequence_index: Option<u32>,
+	pub order_index: Option<u32>,
+	pub order_channel: Option<u8>,
 	pub split_info: Option<SplitPacketInfo>,
 	pub buffer: Vec<u8>,
 	pub identifier_ack: Option<u64> //TODO check type.
@@ -37,14 +37,14 @@ impl Encode for EncapsulatedPacket {
 		);
 		serializer.put_u16((self.buffer.len() << 3) as u16);
 		if self.reliability.is_reliable() {
-			serializer.put_u24_le(self.message_index);
+			serializer.put_u24_le(self.message_index.unwrap());
 		}
 		if self.reliability.is_sequenced() {
-			serializer.put_u24_le(self.sequence_index);
+			serializer.put_u24_le(self.sequence_index.unwrap());
 		}
 		if self.reliability.is_sequenced() || self.reliability.is_ordered() {
-			serializer.put_u24_le(self.order_index);
-			serializer.put_u8(self.order_channel);
+			serializer.put_u24_le(self.order_index.unwrap());
+			serializer.put_u8(self.order_channel.unwrap());
 		}
 		match &self.split_info {
 			Some(split_info) => split_info.encode(serializer),
@@ -67,16 +67,16 @@ impl Decode for EncapsulatedPacket {
 		}
 
 		if packet.reliability.is_reliable() {
-			packet.message_index = serializer.get_u24_le();
+			packet.message_index = Some(serializer.get_u24_le());
 		}
 
 		if packet.reliability.is_sequenced() {
-			packet.sequence_index = serializer.get_u24_le();
+			packet.sequence_index = Some(serializer.get_u24_le());
 		}
 
 		if packet.reliability.is_sequenced() || packet.reliability.is_ordered() {
-			packet.order_index = serializer.get_u24_le();
-			packet.order_channel = serializer.get_u8();
+			packet.order_index = Some(serializer.get_u24_le());
+			packet.order_channel = Some(serializer.get_u8());
 		}
 
 		if has_split {

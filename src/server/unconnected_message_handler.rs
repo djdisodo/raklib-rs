@@ -35,7 +35,7 @@ impl UnconnectedMessageHandler<'_> {
 					let remains = raw_payload.len();
 					debug!("Still {} bytes unread in {:?} from {}", remains, offline_message, address);
 				}
-				self.handle(&offline_message, address)
+				self.handle(offline_message.as_ref(), address)
 			},
 			OpenConnectionRequest1::ID => {
 				let offline_message = Packet::<OpenConnectionRequest1>::decode(&mut raw_payload).payload;
@@ -46,7 +46,7 @@ impl UnconnectedMessageHandler<'_> {
 					let remains = raw_payload.len();
 					debug!("Still {} bytes unread in {:?} from {}", remains, offline_message, address);
 				}
-				self.handle(&offline_message, address)
+				self.handle(offline_message.as_ref(), address)
 			},
 			OpenConnectionRequest2::ID => {
 				let offline_message = Packet::<OpenConnectionRequest2>::decode(&mut raw_payload).payload;
@@ -57,7 +57,7 @@ impl UnconnectedMessageHandler<'_> {
 					let remains = raw_payload.len();
 					debug!("Still {} bytes unread in {:?} from {}", remains, offline_message, address);
 				}
-				self.handle(&offline_message, address)
+				self.handle(offline_message.as_ref(), address)
 			},
 			UnconnectedPingOpenConnections::ID => return true,
 			_ => return false

@@ -3,6 +3,7 @@ use crate::protocol::Datagram;
 use crate::server::Server;
 use std::net::SocketAddr;
 use std::time::{SystemTime, Duration};
+use crate::generic::ReceiveReliabilityLayer;
 
 pub struct Session<'a> {
 	//TODO
@@ -26,6 +27,9 @@ pub struct Session<'a> {
 
 	internal_id: u64,
 
+	recv_layer: ReceiveReliabilityLayer,
+
+	
 	
 
 

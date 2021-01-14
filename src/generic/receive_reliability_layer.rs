@@ -223,7 +223,7 @@ impl ReceiveReliabilityLayer {
 	}
 
 	pub fn on_datagram(&mut self, packet: &mut Datagram) {
-		let sequence_number = packet.sequence_number as usize;
+		let sequence_number = packet.sequence_number.unwrap() as usize;
 		if
 			self.window_range().contains(&sequence_number) ||
 			self.ack_queue.get(sequence_number).map(| x | x.is_some()).unwrap_or(false)
@@ -268,7 +268,6 @@ impl ReceiveReliabilityLayer {
 
 	pub fn update(&mut self) {
 		let diff = self.ack_queue.len() - self.window_start;
-		assert!(diff >= 0);
 		if diff > 0 {
 			//Move the receive window to account for packets we either received or are about to NACK
 			//we ignore any sequence numbers that we sent NACKs for, because we expect the client to resend them

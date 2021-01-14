@@ -4,8 +4,8 @@ use crate::protocol::{Encode, Decode};
 #[derive(Default, Debug)]
 pub struct Datagram {
 	pub header_flags: u8,
-	pub packets: Vec<EncapsulatedPacket>,
-	pub sequence_number: u32
+	pub packets: Vec<Box<EncapsulatedPacket>>,
+	pub sequence_number: Option<u32>
 }
 
 impl Datagram {
@@ -20,6 +20,8 @@ impl Datagram {
 	pub const FLAG_PACKET_PAIR: u8 = 0x10;
 	pub const FLAG_CONTINUOUS_SEND: u8 = 0x08;
 	pub const FLAG_NEEDS_B_AND_AS: u8 = 0x04;
+
+	pub const HEADER_SIZE: usize = 1 + 3; //header flags (1) + sequence number (3)
 }
 
 impl Encode for Datagram {

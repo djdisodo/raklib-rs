@@ -23,6 +23,16 @@ impl EncapsulatedPacket {
 	const RELIABILITY_FLAGS: u8 = 0b111 << Self::RELIABILITY_SHIFT;
 
 	const SPLIT_FLAG: u8 = 0b00010000;
+
+	pub fn get_total_length(&self) -> usize {
+		1 + //reliability
+		2 + //length
+		if self.reliability.is_reliable() { 3 } else { 0 } + //message index
+		if self.reliability.is_sequenced() { 3 } else { 0 } + //sequence index
+		if self.reliability.is_sequenced() || self.reliability.is_ordered() { 3 + 1 } else { 0 } + //order index (3) + order channel (1)
+		if self.split_info.is_some() { 4 + 2 + 4 } else { 0 } + //split count (4) + split ID (2) + split index (4)
+		self.buffer.len()
+	}
 }
 
 impl Encode for EncapsulatedPacket {

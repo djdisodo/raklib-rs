@@ -1,14 +1,13 @@
 use std::collections::{VecDeque, HashMap};
-use crate::protocol::{EncapsulatedPacket, PacketReliability, Datagram, Packet, Payload, PayloadExt};
+use crate::protocol::{EncapsulatedPacket, PacketReliability, Datagram, EncodePacket, MessageIdentifierHeader, ACK, NACK, PacketImpl, Packet};
 use log::debug;
 use std::ops::{RangeInclusive, RangeBounds};
 use std::iter::repeat;
-use crate::protocol::payload::{ACK, NACK};
 
-pub struct ReceiveReliabilityLayer {
-	on_recv: Box<dyn Fn(&mut EncapsulatedPacket) -> ()>,
+pub struct ReceiveReliabilityLayer<'a> {
+	on_recv: Box<dyn Fn(&mut EncapsulatedPacket) -> () + 'a>,
 
-	send_packet: Box<dyn Fn(Packet<dyn PayloadExt>) -> ()>,
+	send_packet: Box<dyn Fn(Packet) -> () + 'a>,
 
 	window_start: usize,
 	window_end: usize,
@@ -32,13 +31,13 @@ pub struct ReceiveReliabilityLayer {
 	max_concurrent_split_packets: usize,
 }
 
-impl ReceiveReliabilityLayer {
+impl<'a> ReceiveReliabilityLayer<'a> {
 
 	pub const WINDOW_SIZE: usize = 2048;
 
 	pub fn new(
-		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'static,
-		send_packet: impl Fn(Packet<dyn PayloadExt>) -> () + 'static
+		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'a,
+		send_packet: impl Fn(Packet) -> () + 'a
 	) -> Self {
 		Self::with_split_limit(
 			on_recv,
@@ -49,13 +48,13 @@ impl ReceiveReliabilityLayer {
 	}
 
 	pub fn with_split_limit(
-		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'static,
-		send_packet: impl Fn(Packet<dyn PayloadExt>) -> () + 'static,
+		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'a,
+		send_packet: impl Fn(Packet) -> () + 'a,
 		max_split_packet_part_count: usize,
 		max_concurrent_split_packets: usize
 	) -> Self {
 		Self {
-			on_recv: Box::new(on_recv) as _,
+			on_recv: Box::new(on_recv),
 			send_packet: Box::new(send_packet),
 			window_start: 0,
 			window_end: Self::WINDOW_SIZE,
@@ -278,18 +277,22 @@ impl ReceiveReliabilityLayer {
 		}
 
 		if !self.ack_queue.is_empty() {
-			let mut pk = Packet::<ACK>::default();
+			let mut pk = ACK::default();
 			pk.packets = self.ack_queue.iter().filter_map(| x | x.to_owned()).collect();
 			(self.send_packet)(pk.into_dyn());
 			self.ack_queue.clear();
 		}
 
 		if !self.nack_queue.is_empty() {
-			let mut pk = Packet::<NACK>::default();
+			let mut pk = NACK::default();
 			pk.packets = self.nack_queue.iter().filter_map(| x | x.to_owned()).collect();
 			(self.send_packet)(pk.into_dyn());
 			self.nack_queue.clear();
 		}
+	}
+
+	pub fn needs_update(&self) -> bool {
+		!self.ack_queue.is_empty() && !self.nack_queue.is_empty()
 	}
 
 }

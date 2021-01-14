@@ -1,5 +1,5 @@
-use crate::protocol::EncapsulatedPacket;
-use crate::protocol::{Encode, Decode};
+use crate::protocol::{EncodeBody, DecodeBody, EncapsulatedPacket};
+use bytes::{BufMut, Buf};
 
 #[derive(Default, Debug)]
 pub struct Datagram {
@@ -24,14 +24,14 @@ impl Datagram {
 	pub const HEADER_SIZE: usize = 1 + 3; //header flags (1) + sequence number (3)
 }
 
-impl Encode for Datagram {
-	fn encode(&self, _serializer: &mut Vec<u8>) {
+impl EncodeBody for Datagram {
+	fn encode_body(&self, mut _serializer: &mut dyn BufMut) {
 		unimplemented!()
 	}
 }
 
-impl Decode for Datagram {
-	fn decode(_serializer: &mut &[u8]) -> Self {
+impl DecodeBody for Datagram {
+	fn decode_body(_serializer: &mut dyn Buf) -> Self {
 		unimplemented!()
 	}
 }

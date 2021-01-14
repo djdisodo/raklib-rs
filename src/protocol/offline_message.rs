@@ -1,5 +1,5 @@
-use crate::protocol::{Encode, Decode, Payload};
-use bytes::BufMut;
+use crate::protocol::{EncodeBody, DecodeBody, MessageIdentifierHeader};
+use bytes::{BufMut, Buf};
 use std::io::Read;
 
 #[derive(Default, Debug)]
@@ -15,23 +15,23 @@ impl OfflineMessage {
 	}
 }
 
-impl Encode for OfflineMessage {
-	fn encode(&self, serializer: &mut Vec<u8>) {
+impl EncodeBody for OfflineMessage {
+	fn encode_body(&self, serializer: &mut dyn BufMut) {
 		serializer.put_slice(&Self::MAGIC);
 	}
 }
 
-impl Decode for OfflineMessage {
-	fn decode(serializer: &mut &[u8]) -> Self {
+impl DecodeBody for OfflineMessage {
+	fn decode_body(serializer: &mut dyn Buf) -> Self {
 		let mut magic = [0; 16];
-		serializer.read(&mut magic).unwrap();
+		serializer.copy_to_slice(&mut magic);
 		Self {
 			magic
 		}
 	}
 }
 
-pub trait OfflineMessageImpl: Payload {
+pub trait OfflineMessageImpl: MessageIdentifierHeader {
 	fn get_offline_message(&self) -> &OfflineMessage;
 	fn is_valid(&self) -> bool {
 		self.get_offline_message().is_valid()

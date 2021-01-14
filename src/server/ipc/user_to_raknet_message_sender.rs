@@ -6,8 +6,6 @@ use std::net::{SocketAddr, IpAddr};
 use regex::bytes::Regex;
 use std::time::Duration;
 use crate::protocol::EncapsulatedPacket;
-use crate::server::ipc::user_to_raknet_message::{Encapsulated, BlockAddress};
-use crate::server::server_event::Raw;
 
 pub struct UserToRaknetMessageSender {
 	channel: Arc<Mutex<VecDeque<UserToRaknetMessage>>>
@@ -28,25 +26,27 @@ impl ServerInterface for UserToRaknetMessageSender {
 	}
 
 	#[inline]
-	fn send_encapsulated(&mut self, session_id: u32, packet: EncapsulatedPacket, immediate: bool) {
-		self.handle_message(UserToRaknetMessage::Encapsulated(Encapsulated {
+	fn send_encapsulated(&mut self, session_id: usize, packet: EncapsulatedPacket, immediate: bool) {
+		self.handle_message(UserToRaknetMessage::Encapsulated {
 			session_id,
 			packet,
 			immediate
-		}));
+		});
 	}
 
 	#[inline]
 	fn send_raw(&mut self, address: SocketAddr, payload: Vec<u8>) {
-		self.handle_message(UserToRaknetMessage::Raw(Raw {
+		self.handle_message(UserToRaknetMessage::Raw {
 			address,
 			payload
-		}));
+		});
 	}
 
 	#[inline]
-	fn close_session(&mut self, session_id: u32) {
-		self.handle_message(UserToRaknetMessage::CloseSession(session_id));
+	fn close_session(&mut self, session_id: usize) {
+		self.handle_message(UserToRaknetMessage::CloseSession {
+			session_id
+		});
 	}
 
 	#[inline]
@@ -66,10 +66,10 @@ impl ServerInterface for UserToRaknetMessageSender {
 
 	#[inline]
 	fn block_address(&mut self, address: IpAddr, timeout: Duration) {
-		self.handle_message(UserToRaknetMessage::BlockAddress(BlockAddress {
+		self.handle_message(UserToRaknetMessage::BlockAddress {
 			address,
 			timeout
-		}));
+		});
 	}
 
 	#[inline]

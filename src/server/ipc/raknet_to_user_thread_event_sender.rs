@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
 use std::collections::VecDeque;
-use crate::server::server_event::{OpenSession, CloseSession, Encapsulated, Raw, AckNotification, ReportBandwidthStats, ReportPing};
 use std::net::SocketAddr;
 use std::time::Duration;
 use crate::server::{ServerEventListener, ServerEvent};
@@ -24,59 +23,59 @@ impl ServerEventListener for RaknetToUserThreadEventSender {
 	}
 
 	#[inline]
-	fn open_session(&mut self, session_id: u32, address: SocketAddr, client_id: u64) {
-		self.handle_event(ServerEvent::OpenSession(OpenSession {
+	fn on_client_connect(&mut self, session_id: usize, address: SocketAddr, client_id: u64) {
+		self.handle_event(ServerEvent::ClientConnect {
 			session_id,
 			address,
 			client_id
-		}))
+		})
 	}
 
 	#[inline]
-	fn close_session(&mut self, session_id: u32, reason: String) {
-		self.handle_event(ServerEvent::CloseSession(CloseSession {
+	fn on_client_disconnect(&mut self, session_id: usize, reason: &str) {
+		self.handle_event(ServerEvent::ClientDisconnect {
 			session_id,
-			reason
-		}))
+			reason: reason.to_owned()
+		})
 	}
 
 	#[inline]
-	fn handle_encapsulated(&mut self, session_id: u32, packet: Vec<u8>) {
-		self.handle_event(ServerEvent::Encapsulated(Encapsulated {
+	fn on_packet_receive(&mut self, session_id: usize, packet: &[u8]) {
+		self.handle_event(ServerEvent::PacketReceive {
 			session_id,
-			packet
-		}))
+			packet: packet.to_owned()
+		})
 	}
 
 	#[inline]
-	fn handle_raw(&mut self, address: SocketAddr, payload: Vec<u8>) {
-		self.handle_event(ServerEvent::Raw(Raw {
+	fn on_raw_packet_receive(&mut self, address: SocketAddr, payload: &[u8]) {
+		self.handle_event(ServerEvent::RawPacketReceive {
 			address,
-			payload
-		}))
+			payload: payload.to_owned()
+		})
 	}
 
 	#[inline]
-	fn notify_ack(&mut self, session_id: u32, identifier_ack: u32) {
-		self.handle_event(ServerEvent::AckNotification(AckNotification {
+	fn on_packet_ack(&mut self, session_id: usize, identifier_ack: u32) {
+		self.handle_event(ServerEvent::PacketAck {
 			session_id,
 			identifier_ack
-		}))
+		})
 	}
 
 	#[inline]
-	fn handle_bandwidth_stats(&mut self, bytes_sent_diff: usize, bytes_received_diff: usize) {
-		self.handle_event(ServerEvent::ReportBandwidthStats(ReportBandwidthStats {
+	fn on_bandwidth_stats_update(&mut self, bytes_sent_diff: usize, bytes_received_diff: usize) {
+		self.handle_event(ServerEvent::BandwidthStatsUpdate {
 			bytes_sent_diff,
 			bytes_received_diff
-		}))
+		})
 	}
 
 	#[inline]
-	fn update_ping(&mut self, session_id: u32, latency: Duration) {
-		self.handle_event(ServerEvent::ReportPing(ReportPing {
+	fn on_ping_measure(&mut self, session_id: usize, latency: Duration) {
+		self.handle_event(ServerEvent::PingMeasure {
 			session_id,
 			latency
-		}))
+		})
 	}
 }

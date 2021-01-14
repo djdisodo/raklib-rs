@@ -1,4 +1,4 @@
-use crate::protocol::{Encode, Decode};
+use crate::protocol::{EncodeBody, DecodeBody};
 use bytes::{BufMut, Buf};
 use crate::protocol::PacketReliability;
 use bytes_addition::{PutTriad, GetTriad};
@@ -35,8 +35,8 @@ impl EncapsulatedPacket {
 	}
 }
 
-impl Encode for EncapsulatedPacket {
-	fn encode(&self, serializer: &mut Vec<u8>) {
+impl EncodeBody for EncapsulatedPacket {
+	fn encode_body(&self, serializer: &mut dyn BufMut) {
 		serializer.put_u8(
 			((self.reliability as u8) << Self::RELIABILITY_SHIFT) |
 				if self.split_info.is_some() {
@@ -57,15 +57,15 @@ impl Encode for EncapsulatedPacket {
 			serializer.put_u8(self.order_channel.unwrap());
 		}
 		match &self.split_info {
-			Some(split_info) => split_info.encode(serializer),
+			Some(split_info) => split_info.encode_body(serializer),
 			_ => {}
 		}
 		serializer.put_slice(self.buffer.as_slice());
 	}
 }
 
-impl Decode for EncapsulatedPacket {
-	fn decode(serializer: &mut &[u8]) -> Self {
+impl DecodeBody for EncapsulatedPacket {
+	fn decode_body(serializer: &mut dyn Buf) -> Self {
 		let mut packet = EncapsulatedPacket::default();
 		let flags = serializer.get_u8();
 		packet.reliability = ((flags & Self::RELIABILITY_FLAGS) >> Self::RELIABILITY_SHIFT).try_into().expect("failed to decode packet reliability");
@@ -73,7 +73,7 @@ impl Decode for EncapsulatedPacket {
 
 		let length = (serializer.get_u16() as f32 / 8f32).ceil() as u16;
 		if length == 0 {
-			panic!("Encapsulated payload length cannot be zero"); // todo implement Error
+			panic!("Encapsulated packet length cannot be zero"); // todo implement Error
 		}
 
 		if packet.reliability.is_reliable() {
@@ -90,11 +90,11 @@ impl Decode for EncapsulatedPacket {
 		}
 
 		if has_split {
-			packet.split_info.replace(SplitPacketInfo::decode(serializer));
+			packet.split_info.replace(SplitPacketInfo::decode_body(serializer));
 		}
 
 		packet.buffer = vec![0; length as usize];
-		serializer.read(&mut packet.buffer).unwrap();
+		serializer.copy_to_slice(&mut packet.buffer);
 
 		packet
 	}

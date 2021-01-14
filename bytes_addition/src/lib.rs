@@ -1,5 +1,4 @@
 use bytes::{Buf, BufMut};
-use bytes::buf::BufExt;
 
 pub trait GetTriad {
     fn get_u24(&mut self) -> u32;
@@ -15,7 +14,7 @@ pub trait PutTriad {
     fn put_i24_le(&mut self, n: i32);
 }
 
-impl<T: Buf> GetTriad for T {
+impl<T: Buf + ?Sized> GetTriad for T {
     fn get_u24(&mut self) -> u32 {
         let mut bytes = self.take(3);
         (bytes.get_u8() as u32) << 16 & bytes.get_u16() as u32
@@ -37,7 +36,7 @@ impl<T: Buf> GetTriad for T {
     }
 }
 
-impl <T: BufMut> PutTriad for T {
+impl <T: BufMut + ?Sized> PutTriad for T {
     fn put_u24_be(&mut self, n: u32) {
         self.put_u8((n >> 16) as u8);
         self.put_u8((n >> 8) as u8);

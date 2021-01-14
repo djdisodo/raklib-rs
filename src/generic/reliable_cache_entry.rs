@@ -2,8 +2,8 @@ use crate::protocol::EncapsulatedPacket;
 use std::time::SystemTime;
 
 pub struct ReliableCacheEntry {
-	packets: Vec<Box<EncapsulatedPacket>>,
-	timestamp: SystemTime
+	pub packets: Vec<Box<EncapsulatedPacket>>,
+	pub timestamp: SystemTime
 }
 
 impl ReliableCacheEntry {
@@ -12,13 +12,5 @@ impl ReliableCacheEntry {
 			packets,
 			timestamp: SystemTime::now()
 		}
-	}
-
-	pub fn get_packets(&self) -> &Vec<Box<EncapsulatedPacket>> {
-		&self.packets
-	}
-
-	pub fn get_timestamp(&self) -> &SystemTime {
-		&self.timestamp
 	}
 }

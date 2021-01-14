@@ -1,4 +1,4 @@
-use crate::protocol::{Encode, Decode};
+use crate::protocol::{EncodeBody, DecodeBody};
 use bytes::{BufMut, Buf};
 
 #[derive(Debug, Clone)]
@@ -34,16 +34,16 @@ impl SplitPacketInfo {
 	}
 }
 
-impl Encode for SplitPacketInfo {
-	fn encode(&self, serializer: &mut Vec<u8>) {
+impl EncodeBody for SplitPacketInfo {
+	fn encode_body(&self, serializer: &mut dyn BufMut) {
 		serializer.put_u32(self.total_part_count);
 		serializer.put_u16(self.id);
 		serializer.put_u32(self.part_index);
 	}
 }
 
-impl Decode for SplitPacketInfo {
-	fn decode(serializer: &mut &[u8]) -> Self {
+impl DecodeBody for SplitPacketInfo {
+	fn decode_body(serializer: &mut dyn Buf) -> Self {
 		Self {
 			total_part_count: serializer.get_u32(),
 			id: serializer.get_u16(),

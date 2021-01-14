@@ -4,15 +4,15 @@ use crate::server::session::Session;
 use std::time::{Duration, Instant};
 use regex::bytes::Regex;
 use crate::server::ipc::UserToRaknetMessageReceiver;
-use crate::server::{ServerEventListener, ProtocolAcceptor};
+use crate::server::{ServerEventListener, ProtocolAcceptor, ServerEvent};
 use std::io::ErrorKind;
 use log::debug;
-use crate::protocol::{Datagram, Packet, Decode, Encode};
-use crate::protocol::payload::{ACK, NACK};
+use crate::protocol::{Datagram, EncodePacket, DecodeBody, EncodeBody, NACK, ACK};
 use parking_lot::RwLock;
 use std::rc::Rc;
 use crate::server::unconnected_message_handler::UnconnectedMessageHandler;
 use std::ops::{Deref, DerefMut};
+use crate::RaknetTime;
 
 struct _Server<'a> { // TODO move out values not being wrote while running
 
@@ -20,7 +20,7 @@ struct _Server<'a> { // TODO move out values not being wrote while running
 	receive_bytes: usize,
 	send_bytes: usize,
 	buffer: Vec<u8>,
-	max_mtu_size: u16,
+	max_mtu_size: usize,
 
 	server_id: u64,
 
@@ -49,18 +49,16 @@ struct _Server<'a> { // TODO move out values not being wrote while running
 	next_session_id: VecDeque<usize>,
 
 	message_receiver: UserToRaknetMessageReceiver, // event_source
-	event_listener: Box<dyn ServerEventListener>,
 
 	//trace_cleaner
 }
 
 impl _Server<'_> {
-	fn new<EL: ServerEventListener>(
+	fn new(
 		server_id: u64,
 		udp_socket: UdpSocket,
-		max_mtu_size: u16,
+		max_mtu_size: usize,
 		message_receiver: UserToRaknetMessageReceiver,
-		event_listener: EL,
 	) -> Self {
 		let reusable_address = udp_socket.local_addr().unwrap();
 		Self {
@@ -83,20 +81,19 @@ impl _Server<'_> {
 			start_time: None,
 			reusable_address,
 			next_session_id: VecDeque::new(),
-			message_receiver,
-			event_listener: Box::new(event_listener) as Box<_>
+			message_receiver
 		}
 	}
 
-	pub fn get_raknet_time(&self) -> Duration {
-		Instant::now().duration_since(self.start_time.unwrap())
+	pub fn get_raknet_time(&self) -> RaknetTime {
+		self.start_time.unwrap().elapsed()
 	}
 
 	pub fn get_port(&self) -> u16 {
 		self.udp_socket.local_addr().unwrap().port()
 	}
 
-	pub fn get_max_mtu_size(&self) -> u16 {
+	pub fn get_max_mtu_size(&self) -> usize {
 		self.max_mtu_size
 	}
 
@@ -136,11 +133,11 @@ impl _Server<'_> {
 				let header = self.buffer[0];
 				if (header & Datagram::FLAG_VALID) != 0 {
 					if (header & Datagram::FLAG_ACK) != 0 {
-						session.handle_ack(*Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_ack(ACK::decode_body(&mut self.buffer.as_slice()));
 					} else if (header & Datagram::FLAG_NAK) != 0 {
-						session.handle_nack(*Packet::decode(&mut self.buffer.as_slice()).payload);
+						session.handle_nack(NACK::decode_body(&mut self.buffer.as_slice()));
 					} else {
-						session.handle_datagram(Datagram::decode(&mut self.buffer.as_slice()));
+						//TODO session.handle_datagram(Datagram::decode_body(&mut self.buffer.as_slice()));
 					}
 				} else {
 					debug!("Ignored unconnected packet from $address due to session already opened (0x{})", format!("{:X}", header))
@@ -153,23 +150,15 @@ impl _Server<'_> {
 		true
 	}
 
-	pub fn send_packet(&mut self, packet: impl Encode, address: &SocketAddr) {
+	pub fn send_packet(&mut self, packet: &impl EncodePacket, address: &SocketAddr) {
 		self.buffer.clear();
-		packet.encode(&mut self.buffer);
+		packet.encode_packet(&mut self.buffer);
 		match self.udp_socket.send_to(&self.buffer, address) {
 			Ok(send) => self.send_bytes += send,
 			Err(e) => debug!("{}", e)
 		}
 	}
 
-
-
-	pub fn create_session(&mut self, address: SocketAddr, client_id: u64, mtu_size: u16) {
-		//TODO self.check_sessions
-		//let next_session_id = self.next_session_id.pop_back().unwrap_or_else(|| {
-			//self.sessions.len().
-		//});
-	}
 }
 
 //declare struct :: `type` declaration doesn't works well in idea
@@ -177,16 +166,17 @@ pub struct Server<'a> {
 	inner: RwLock<_Server<'a>>,
 
 	pub(super) protocol_acceptor: Box<dyn ProtocolAcceptor>,
+	event_listener: RwLock<Box<dyn ServerEventListener>>
 }
 
 impl Server<'_> {
-	pub fn new<EL: ServerEventListener, PA: ProtocolAcceptor>(
+	pub fn new(
 		server_id: u64,
 		udp_socket: UdpSocket,
-		max_mtu_size: u16,
-		protocol_acceptor: PA,
+		max_mtu_size: usize,
+		protocol_acceptor: impl ProtocolAcceptor,
 		message_receiver: UserToRaknetMessageReceiver,
-		event_listener: EL,
+		event_listener: impl ServerEventListener,
 	) -> Self {
 		Self {
 			inner: RwLock::new(_Server::new(
@@ -194,13 +184,13 @@ impl Server<'_> {
 				udp_socket,
 				max_mtu_size,
 				message_receiver,
-				event_listener,
 			)),
 			protocol_acceptor: Box::new(protocol_acceptor) as Box<_>,
+			event_listener: RwLock::new(Box::new(event_listener))
 		}
 	}
 
-	pub fn get_raknet_time(&self) -> Duration {
+	pub fn get_raknet_time(&self) -> RaknetTime {
 		self.inner.read().get_raknet_time()
 	}
 
@@ -208,7 +198,7 @@ impl Server<'_> {
 		self.inner.read().get_port()
 	}
 
-	pub fn get_max_mtu_size(&self) -> u16 {
+	pub fn get_max_mtu_size(&self) -> usize {
 		self.inner.read().get_max_mtu_size()
 	}
 
@@ -233,8 +223,29 @@ impl Server<'_> {
 		}*/
 	}
 
-	pub fn send_packet(&self, packet: impl Encode, address: &SocketAddr) {
+	pub fn send_packet(&self, packet: &impl EncodePacket, address: &SocketAddr) {
 		self.inner.write().send_packet(packet, address);
+	}
+
+	pub fn get_event_listener(&self) -> &RwLock<Box<dyn ServerEventListener>> {
+		&self.event_listener
+	}
+
+	pub fn create_session(&mut self, address: SocketAddr, client_id: u64, mtu_size: u16) {
+		//TODO self.check_sessions
+		//let next_session_id = self.next_session_id.pop_back().unwrap_or_else(|| {
+		//self.sessions.len().
+		//});
+	}
+
+
+	pub fn open_session(&self, session: &Session) {
+		let address = session.get_address();
+		self.event_listener.write().on_client_connect(
+			session.get_internal_id(),
+			address.clone(),
+			session.get_id()
+		);
 	}
 
 	pub fn get_port_checking(&self) -> bool {
@@ -246,4 +257,3 @@ impl Server<'_> {
 	}
 
 }
-

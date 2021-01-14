@@ -1,12 +1,13 @@
-use crate::protocol::{Datagram, EncapsulatedPacket, PacketReliability, SplitPacketInfo};
+use crate::protocol::{Datagram, EncapsulatedPacket, PacketReliability, SplitPacketInfo, ACK, NACK};
 use crate::generic::ReliableCacheEntry;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::mem::replace;
+use std::time::{SystemTime, Duration};
 
-pub struct SendReliabilityLayer {
-	send_datagram_callback: Box<dyn Fn(&mut Datagram) -> ()>,
+pub struct SendReliabilityLayer<'a> {
+	send_datagram_callback: Box<dyn Fn(&mut Datagram) -> () + 'a>,
 
-	on_ack: Box<dyn Fn(u32) -> ()>,
+	on_ack: Box<dyn Fn(u64) -> () + 'a>,
 
 	mtu_size: usize,
 
@@ -21,18 +22,18 @@ pub struct SendReliabilityLayer {
 	send_ordered_index: [u32; PacketReliability::MAX_ORDER_CHANNELS],
 	send_sequenced_index: [u32; PacketReliability::MAX_ORDER_CHANNELS],
 
-	resend_queue: Vec<Datagram>,
+	resend_queue: VecDeque<Datagram>,
 
 	reliable_cache: HashMap<u32, ReliableCacheEntry>, //TODO replace hashmap
 
 	need_ack: HashMap<u64, HashMap<u32, u32>> //TODO replace hashmap
 }
 
-impl SendReliabilityLayer {
+impl<'a> SendReliabilityLayer<'a> {
 	pub fn new(
 		mtu_size: usize,
-		send_datagram: impl Fn(&mut Datagram) -> () + 'static,
-		on_ack: impl Fn(u32) -> () + 'static
+		send_datagram: impl Fn(&mut Datagram) -> () + 'a,
+		on_ack: impl Fn(u64) -> () + 'a
 	) -> Self {
 		Self {
 			send_datagram_callback: Box::new(send_datagram),
@@ -44,7 +45,7 @@ impl SendReliabilityLayer {
 			message_index: 0,
 			send_ordered_index: Default::default(),
 			send_sequenced_index: Default::default(),
-			resend_queue: vec![],
+			resend_queue: Default::default(),
 			reliable_cache: Default::default(),
 			need_ack: Default::default()
 		}
@@ -153,5 +154,64 @@ impl SendReliabilityLayer {
 
 	}
 
+	pub fn on_ack(&mut self, packet: &ACK) {
+		for seq in &packet.packets {
+			if let Some(reliable_cache) = self.reliable_cache.get(seq) {
+				for pk in &reliable_cache.packets {
+					if pk.identifier_ack.is_some() && pk.message_index.is_some() {
+						self.need_ack.get_mut(&pk.identifier_ack.unwrap()).unwrap().remove(&pk.message_index.unwrap());
+						if self.need_ack.get(&pk.identifier_ack.unwrap()).unwrap().is_empty() {
+							self.need_ack.remove(&pk.identifier_ack.unwrap());
+							(self.on_ack)(pk.identifier_ack.unwrap())
+						}
+					}
+				}
+			}
+		}
+	}
 
+	pub fn on_nack(&mut self, packet: &NACK) {
+		for seq in &packet.packets {
+			if let Some(reliable_cache) = self.reliable_cache.get(seq) {
+				//TODO: group resends if the resulting datagram is below the MTU
+				let mut resend = Datagram::default();
+				resend.packets = self.reliable_cache.remove(&seq).unwrap().packets;
+				self.resend_queue.push_back(resend);
+			}
+		}
+	}
+
+	pub fn needs_update(&self) -> bool {
+		!self.send_queue.is_empty() &&
+		!self.resend_queue.is_empty() &&
+		!self.reliable_cache.is_empty()
+	}
+
+	pub fn update(&mut self) {
+		if !self.resend_queue.is_empty() {
+			let mut limit = 16;
+			while let Some(pk) = self.resend_queue.pop_front() {
+				self.send_datagram(pk);
+
+				limit -= 1;
+				if limit <= 0 {
+					break;
+				}
+			}
+		}
+
+		let keys: Vec<u32> = self.reliable_cache.keys().map(| x | *x).collect();
+
+		for seq in keys {
+			if SystemTime::now().duration_since(self.reliable_cache[&seq].timestamp).unwrap() < Duration::from_secs(8) {
+				let mut resend = Datagram::default();
+				resend.packets = self.reliable_cache.remove(&seq).unwrap().packets;
+				self.resend_queue.push_back(resend);
+			} else {
+				break;
+			}
+		}
+
+		self.send_queue();
+	}
 }

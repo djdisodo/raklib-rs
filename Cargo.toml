@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 derive_deref = "1.1.1"
 num_enum = "0.5"
-bytes = "0.5"
+bytes = "1.0"
 bytes_addition = { path = "bytes_addition" }
 c-types = "2.0"
 regex = "1.3"

@@ -1,7 +1,7 @@
 use std::collections::{VecDeque, HashMap};
 use crate::protocol::{EncapsulatedPacket, PacketReliability, Datagram, ACK, NACK, PacketImpl, Packet};
 use log::debug;
-use std::ops::{RangeInclusive, RangeBounds};
+use std::ops::RangeInclusive;
 use std::iter::repeat;
 
 pub struct ReceiveReliabilityLayer<'a> {

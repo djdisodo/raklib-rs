@@ -14,14 +14,13 @@ pub type RaknetTime = Duration;
 
 #[cfg(test)]
 mod tests {
-    use crate::protocol::IncompatibleProtocolVersion;
-    use crate::protocol::EncodeBody;
+    use crate::protocol::{IncompatibleProtocolVersion, EncodePacket};
 
     #[test]
     fn it_works() {
         let mut buffer = Vec::new();
         let aa = IncompatibleProtocolVersion::default();
-        aa.encode_payload(&mut buffer);
+        aa.encode_packet(&mut buffer);
         println!("done");
     }
 }

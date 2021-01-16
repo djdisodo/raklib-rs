@@ -3,17 +3,17 @@ use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 use regex::bytes::Regex;
 use crate::server::ipc::UserToRaknetMessageReceiver;
-use crate::server::{ServerEventListener, ProtocolAcceptor, ServerEvent, Session};
+use crate::server::{ServerEventListener, ProtocolAcceptor, Session};
 use std::io::ErrorKind;
-use crate::protocol::{Datagram, EncodePacket, DecodeBody, EncodeBody, NACK, ACK, EncapsulatedPacket};
-use parking_lot::{Mutex, MutexGuard};
+use crate::protocol::{Datagram, EncodePacket, DecodeBody, NACK, ACK, EncapsulatedPacket};
+use parking_lot::{Mutex};
 use crate::server::unconnected_message_handler::UnconnectedMessageHandler;
-use std::ops::{Deref, DerefMut, Range, RangeFrom};
+use std::ops::{Deref, RangeFrom};
 use crate::RaknetTime;
 use log::{debug, info};
-use std::sync::{Arc, Weak};
+use std::sync::{Arc};
 use crate::server::session::SessionImmutable;
-use std::cell::RefCell;
+
 
 pub struct Server<'a> {
 	mutable: Mutex<ServerMutable<'a>>,
@@ -53,7 +53,7 @@ impl<'a> Server<'a> {
 		}
 	}
 
-	pub fn create_session(&self, address: SocketAddr, client_id: usize, mtu_size: u16) {
+	pub fn create_session(&self, _address: SocketAddr, _client_id: usize, _mtu_size: u16) {
 		//TODO self.check_sessions
 		//let next_session_id = self.next_session_id.pop_back().unwrap_or_else(|| {
 		//self.sessions.len().

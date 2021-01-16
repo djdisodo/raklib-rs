@@ -13,5 +13,5 @@ pub use server::*;
 pub use server_event::ServerEvent;
 pub use server_event_listener::ServerEventListener;
 pub use server_interface::ServerInterface;
-pub use session::Session;
+pub use session::*;
 pub use unconnected_message_handler::UnconnectedMessageHandler;

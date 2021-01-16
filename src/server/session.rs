@@ -1,15 +1,15 @@
-use crate::protocol::{Datagram, EncodePacket, PacketReliability, EncapsulatedPacket, EncodeBody, ConnectedPing, ACK, NACK, PacketImpl, MessageIdentifiers, ConnectionRequest, MessageIdentifierHeader, DecodePacket, ConnectionRequestAccepted, NewIncomingConnection, DisconnectionNotification, ConnectedPong};
-use crate::server::{Server, ServerMutable};
+use crate::protocol::{Datagram, PacketReliability, EncapsulatedPacket, ConnectedPing, ACK, NACK, PacketImpl, MessageIdentifiers, ConnectionRequest, MessageIdentifierHeader, DecodePacket, ConnectionRequestAccepted, NewIncomingConnection, DisconnectionNotification, ConnectedPong};
+
 use std::net::SocketAddr;
 use std::time::{SystemTime, Duration, Instant};
 use crate::generic::{ReceiveReliabilityLayer, SendReliabilityLayer};
-use log::{debug, warn};
+use log::{debug};
 use std::convert::TryFrom;
 use crate::server::session::SessionState::Disconnecting;
 use crate::RaknetTime;
-use parking_lot::{RwLock, Mutex, MutexGuard};
+use parking_lot::{Mutex, MutexGuard};
 use std::ops::Deref;
-use std::pin::Pin;
+
 use std::sync::Arc;
 use crate::server::server::ServerImmutable;
 
@@ -240,7 +240,7 @@ impl<'a> SessionMutable<'a> {
 	}
 
 	//TODO: clock differential stuff
-	fn handle_pong(&mut self, send_ping_time: RaknetTime, send_pong_time: RaknetTime) {
+	fn handle_pong(&mut self, send_ping_time: RaknetTime, _send_pong_time: RaknetTime) {
 		self.last_ping_measure = self.server.get_raknet_time() - send_ping_time;
 		self.server.event_listener.lock().on_ping_measure(self.internal_id, self.last_ping_measure);
 	}
@@ -251,7 +251,7 @@ impl<'a> SessionMutable<'a> {
 		self.recv_layer.on_datagram(&mut datagram);
 	}
 
-	pub fn handle_ack(&mut self, mut ack: ACK) {
+	pub fn handle_ack(&mut self, ack: ACK) {
 		self.is_active = true;
 		self.last_update = Instant::now();
 		self.send_layer.on_ack(&ack);

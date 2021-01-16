@@ -1,4 +1,4 @@
-use crate::protocol::EncapsulatedPacket;
+
 use std::net::SocketAddr;
 use std::time::Duration;
 

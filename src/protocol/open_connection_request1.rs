@@ -1,5 +1,5 @@
-use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, OfflineMessage, OfflineMessageImpl, CommonPacket, EncodePacket, EncodeHeader, DecodePacket};
-use std::ops::{DerefMut, Deref};
+use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, OfflineMessage, OfflineMessageImpl, EncodePacket, EncodeHeader, DecodePacket};
+
 use bytes::{BufMut, Buf};
 
 #[derive(Default, Debug)]

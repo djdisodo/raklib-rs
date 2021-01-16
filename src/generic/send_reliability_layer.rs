@@ -60,7 +60,7 @@ impl<'a> SendReliabilityLayer<'a> {
 		(self.send_datagram_callback)(&mut datagram);
 
 		let seq_number = datagram.sequence_number.unwrap();
-		let mut resendable: Vec<Box<EncapsulatedPacket>> = datagram.packets.into_iter().filter(| x | x.reliability.is_reliable()).collect();
+		let resendable: Vec<Box<EncapsulatedPacket>> = datagram.packets.into_iter().filter(| x | x.reliability.is_reliable()).collect();
 		if !resendable.is_empty() {
 			self.reliable_cache.insert(seq_number, ReliableCacheEntry::new(resendable));
 		}
@@ -102,7 +102,7 @@ impl<'a> SendReliabilityLayer<'a> {
 		}
 	}
 
-	pub fn add_encapsulated_to_queue(&mut self, mut packet: EncapsulatedPacket, immediate: bool) {
+	pub fn add_encapsulated_to_queue(&mut self, mut packet: EncapsulatedPacket, _immediate: bool) {
 		if let Some(identifier_ack) = packet.identifier_ack {
 			self.need_ack.insert(identifier_ack, Default::default());
 		}
@@ -126,7 +126,7 @@ impl<'a> SendReliabilityLayer<'a> {
 
 			self.split_id += 1;
 			let split_id = (self.split_id % 65536) as u16;
-			let mut count = 0;
+			let count = 0;
 			for buffer in buffers {
 				let mut pk = EncapsulatedPacket::default();
 				pk.split_info = Some(SplitPacketInfo::new(split_id, count, buffer_count));
@@ -172,7 +172,7 @@ impl<'a> SendReliabilityLayer<'a> {
 
 	pub fn on_nack(&mut self, packet: &NACK) {
 		for seq in &packet.packets {
-			if let Some(reliable_cache) = self.reliable_cache.get(seq) {
+			if let Some(_reliable_cache) = self.reliable_cache.get(seq) {
 				//TODO: group resends if the resulting datagram is below the MTU
 				let mut resend = Datagram::default();
 				resend.packets = self.reliable_cache.remove(&seq).unwrap().packets;

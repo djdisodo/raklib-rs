@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+
 use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, OfflineMessage, OfflineMessageImpl, CommonPacket, GetRaknetTime, GetString, PutRaknetTime, PutStr};
 use bytes::{BufMut, Buf};
 use crate::RaknetTime;

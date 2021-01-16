@@ -1,4 +1,3 @@
-use std::ops::{Deref, DerefMut};
 use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, OfflineMessage, OfflineMessageImpl, CommonPacket, GetAddress, PutAddress};
 use std::net::SocketAddr;
 use bytes::{BufMut, Buf};

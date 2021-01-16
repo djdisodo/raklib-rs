@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use crate::server::ServerEvent;
 
-pub trait ServerEventListener: 'static {
+pub trait ServerEventListener {
 	fn handle_event(&mut self, event: ServerEvent) {
 		match event {
 			ServerEvent::ClientConnect {

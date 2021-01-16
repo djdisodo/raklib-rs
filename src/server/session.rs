@@ -1,5 +1,5 @@
 use crate::protocol::{Datagram, EncodePacket, PacketReliability, EncapsulatedPacket, EncodeBody, ConnectedPing, ACK, NACK, PacketImpl, MessageIdentifiers, ConnectionRequest, MessageIdentifierHeader, DecodePacket, ConnectionRequestAccepted, NewIncomingConnection, DisconnectionNotification, ConnectedPong};
-use crate::server::Server;
+use crate::server::{Server, ServerMutable};
 use std::net::SocketAddr;
 use std::time::{SystemTime, Duration, Instant};
 use crate::generic::{ReceiveReliabilityLayer, SendReliabilityLayer};
@@ -7,16 +7,44 @@ use log::{debug, warn};
 use std::convert::TryFrom;
 use crate::server::session::SessionState::Disconnecting;
 use crate::RaknetTime;
+use parking_lot::{RwLock, Mutex, MutexGuard};
+use std::ops::Deref;
+use std::pin::Pin;
+use std::sync::Arc;
+use crate::server::server::ServerImmutable;
 
 pub struct Session<'a> {
-	//TODO
-	server: &'a Server<'a>,
+	mutable: Mutex<SessionMutable<'a>>,
+	immutable: Arc<SessionImmutable<'a>>
+}
 
-	address: SocketAddr,
+impl<'a> Deref for Session<'a> {
+	type Target = Arc<SessionImmutable<'a>>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.immutable
+	}
+}
+
+impl<'a> Session<'a> {
+	pub fn new(server: &'a ServerImmutable<'a>, address: SocketAddr, client_id: u64, mtu_size: usize, internal_id: usize) -> Self {
+		let immutable = Arc::new(SessionImmutable::new(server, address, client_id, internal_id));
+		Self {
+			mutable: Mutex::new(SessionMutable::new(mtu_size, immutable.clone())),
+			immutable
+		}
+	}
+
+	pub fn get_mut(&self) -> MutexGuard<'_, SessionMutable<'a>> {
+		self.mutable.lock()
+	}
+}
+
+pub struct SessionMutable<'a> {
+
+	immutable: Arc<SessionImmutable<'a>>,
 
 	state: SessionState, //default SessionState::Connecting
-
-	id: u64,
 
 	last_update: Instant,
 
@@ -28,29 +56,34 @@ pub struct Session<'a> {
 
 	last_ping_measure: Duration, //default 1
 
-	internal_id: usize,
 
 	recv_layer: ReceiveReliabilityLayer<'a>,
 
 	send_layer: SendReliabilityLayer<'a>
 }
 
-impl<'a> Session<'a> {
+impl<'a> Deref for SessionMutable<'a> {
+	type Target = SessionImmutable<'a>;
+
+	fn deref(&self) -> &Self::Target {
+		self.immutable.deref()
+	}
+}
+
+impl<'a> SessionMutable<'a> {
 
 	pub const MAX_SPLIT_PART_COUNT: usize = 128;
 	pub const MAX_CONCURRENT_SPLIT_COUNT: usize = 4;
 
 	pub const MIN_MTU_SIZE: usize = 400;
 
-	pub fn new(server: &'a Server<'a>, address: SocketAddr, client_id: u64, mtu_size: usize, internal_id: usize) -> Self {
+	fn new(mtu_size: usize, immutable: Arc<SessionImmutable<'a>>) -> Self {
 		if mtu_size < Self::MIN_MTU_SIZE {
 			panic!("MTU size must be at least {}, got {}", Self::MIN_MTU_SIZE, mtu_size);
 		}
 		Self {
-			server,
-			address,
+			immutable,
 			state: SessionState::Connecting,
-			id: client_id,
 
 			last_update: Instant::now(),
 
@@ -58,7 +91,6 @@ impl<'a> Session<'a> {
 			is_active: false,
 			last_ping_time: Instant::now() - SystemTime::UNIX_EPOCH.elapsed().unwrap(),
 			last_ping_measure: Default::default(),
-			internal_id,
 
 			recv_layer: ReceiveReliabilityLayer::with_split_limit(
 				| _ | {}, //TODO
@@ -75,36 +107,9 @@ impl<'a> Session<'a> {
 		}
 	}
 
-	pub fn get_internal_id(&self) -> usize {
-		self.internal_id
-	}
-
-	pub fn get_address(&self) -> &SocketAddr {
-		&self.address
-	}
-
-	pub fn get_id(&self) -> u64 {
-		self.id
-	}
-
-	pub fn get_state(&self) -> SessionState {
-		self.state
-	}
-
-	pub fn is_temporal(&self) -> bool {
-		self.is_temporal
-	}
-
-	pub fn is_connected(&self) -> bool {
-		match self.state {
-			SessionState::Connected | SessionState::Connecting => true,
-			_ => false
-		}
-	}
-
 	pub fn update(&mut self, time: Instant) {
 		let timeout = Duration::from_secs(10);
-		if !self.is_active && time.duration_since(self.last_update)> timeout {
+		if !self.is_active && time.duration_since(self.last_update) > timeout {
 			self.forcibly_disconnect("timeout");
 
 			return;
@@ -138,6 +143,17 @@ impl<'a> Session<'a> {
 		}
 	}
 
+	pub fn is_temporal(&self) -> bool {
+		self.is_temporal
+	}
+
+	pub fn is_connected(&self) -> bool {
+		match self.state {
+			SessionState::Connected | SessionState::Connecting => true,
+			_ => false
+		}
+	}
+
 	fn queue_connected_packet(
 		&mut self,
 		packet: &impl PacketImpl,
@@ -157,8 +173,10 @@ impl<'a> Session<'a> {
 		self.send_layer.add_encapsulated_to_queue(encapsulated, immediate);
 	}
 
-	fn send_packet(&mut self, packet: &impl EncodePacket) {
-		self.server.send_packet(packet, &self.address);
+	fn send_ping_with_reliability(&mut self, reliability: PacketReliability) {
+		self.queue_connected_packet(&ConnectedPing {
+			send_ping_time: self.server.get_raknet_time()
+		}, reliability, 0, true);
 	}
 
 	fn send_ping(&mut self) {
@@ -184,7 +202,7 @@ impl<'a> Session<'a> {
 					},
 					NewIncomingConnection::ID => {
 						let data_packet = NewIncomingConnection::decode_packet(&mut buffer);
-						if data_packet.address.port() == self.server.get_port() || self.server.get_port_checking() {
+						if data_packet.address.port() == self.server.get_port() || self.server.port_checking {
 							self.state = SessionState::Connected; //FINALLY!
 							self.is_temporal = false;
 							self.server.open_session(self);
@@ -215,7 +233,7 @@ impl<'a> Session<'a> {
 				}
 			}
 		} else if self.state == SessionState::Connected {
-			self.server.get_event_listener().write().on_packet_receive(self.internal_id, &packet.buffer)
+			self.server.event_listener.lock().on_packet_receive(self.internal_id, &packet.buffer)
 		} else {
 			//warn!("Received packet before connection: {:#04x}", packet.buffer);
 		}
@@ -224,13 +242,7 @@ impl<'a> Session<'a> {
 	//TODO: clock differential stuff
 	fn handle_pong(&mut self, send_ping_time: RaknetTime, send_pong_time: RaknetTime) {
 		self.last_ping_measure = self.server.get_raknet_time() - send_ping_time;
-		self.server.get_event_listener().write().on_ping_measure(self.internal_id, self.last_ping_measure);
-	}
-
-	fn send_ping_with_reliability(&mut self, reliability: PacketReliability) {
-		self.queue_connected_packet(&ConnectedPing {
-			send_ping_time: self.server.get_raknet_time()
-		}, reliability, 0, true);
+		self.server.event_listener.lock().on_ping_measure(self.internal_id, self.last_ping_measure);
 	}
 
 	pub fn handle_datagram(&mut self, mut datagram: Datagram) {
@@ -251,19 +263,41 @@ impl<'a> Session<'a> {
 		self.send_layer.on_nack(&nack);
 	}
 
+	/**
+	* Initiates a graceful asynchronous disconnect which ensures both parties got all packets.
+	*/
 	pub fn initiate_disconnect(&mut self, reason: &str) {
 		if self.is_connected() {
 			self.state = Disconnecting {
 				disconnection_time: Instant::now()
 			};
 			self.queue_connected_packet(&DisconnectionNotification::default(), PacketReliability::ReliableOrdered, 0, true);
-			self.server.get_event_listener().write().on_client_disconnect(self.internal_id, reason);
+			self.server.event_listener.lock().on_client_disconnect(self.internal_id, reason);
 			debug!("Requesting graceful disconnect because \"{}\"", reason)
 		}
 	}
 
+	/**
+	 * Disconnects the session with immediate effect, regardless of current session state. Usually used in timeout cases.
+	 */
 	pub fn forcibly_disconnect(&mut self, reason: &str) {
-		unimplemented!()
+		self.state = SessionState::Disconnected {
+			disconnection_time: Instant::now()
+		};
+		self.server.event_listener.lock().on_client_disconnect(self.internal_id, reason);
+		debug!("Forcibly disconnecting session due to \"{}\"", reason);
+	}
+
+
+	/**
+	 * Returns whether the session is ready to be destroyed (either properly cleaned up or forcibly terminated)
+	 */
+	pub fn is_fully_disconnected(&self) -> bool {
+		if let SessionState::Disconnected { .. } = self.state {
+			true
+		} else {
+			false
+		}
 	}
 }
 
@@ -276,5 +310,27 @@ pub enum SessionState {
 	},
 	Disconnected {
 		disconnection_time: Instant
+	}
+}
+
+pub struct SessionImmutable<'a> {
+
+	server: &'a ServerImmutable<'a>,
+
+	pub client_id: u64,
+
+	pub address: SocketAddr,
+
+	pub internal_id: usize,
+}
+
+impl<'a> SessionImmutable<'a> {
+	pub fn new(server: &'a ServerImmutable<'a>, address: SocketAddr, client_id: u64, internal_id: usize) -> Self {
+		Self {
+			server,
+			client_id,
+			address,
+			internal_id
+		}
 	}
 }

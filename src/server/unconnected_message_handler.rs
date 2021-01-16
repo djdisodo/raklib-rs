@@ -2,18 +2,21 @@ use crate::server::{ProtocolAcceptor, Server, ServerEventListener};
 use std::net::SocketAddr;
 use crate::protocol::{EncodePacket, MessageIdentifierHeader, DecodeBody, OfflineMessageImpl, UnconnectedPing, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPingOpenConnections, UnconnectedPong, IncompatibleProtocolVersion, OpenConnectionReply1, OpenConnectionReply2, DecodePacket};
 use log::{info, debug};
-use crate::server::session::Session;
+use crate::server::session::SessionMutable;
 use std::cmp::min;
 use std::convert::TryInto;
 use std::sync::RwLock;
 use bytes::Buf;
 use std::any::Any;
+use std::ops::Deref;
+use crate::server::ServerMutable;
 
 pub struct UnconnectedMessageHandler<'a> {
-	pub(super) server: &'a Server<'a>,
+	pub(super) server: &'a mut ServerMutable<'a>,
 }
 
 impl UnconnectedMessageHandler<'_> {
+
 	pub fn handle_raw(&mut self, mut raw_payload: &[u8], address: &SocketAddr) -> bool{
 		if raw_payload.is_empty() {
 			return false;
@@ -74,8 +77,8 @@ impl Handle<UnconnectedPing> for UnconnectedMessageHandler<'_> {
 		self.server.send_packet(&UnconnectedPong {
 				offline_message: Default::default(),
 				send_ping_time: offline_message.send_ping_time,
-				server_id: self.server.get_id(),
-				server_name: self.server.get_name().to_owned()
+				server_id: self.server.id,
+				server_name: self.server.name.to_owned()
 			}, address)
 	}
 }
@@ -85,13 +88,13 @@ impl Handle<OpenConnectionRequest1> for UnconnectedMessageHandler<'_> {
 		if !self.server.protocol_acceptor.accepts(offline_message.protocol) {
 			self.server.send_packet(&IncompatibleProtocolVersion::create(
 					self.server.protocol_acceptor.get_primary_version(),
-					self.server.get_id()
+					self.server.id
 				), address);
 			info!("Refused connection from {} due to incompatible RakNet protocol version (version {})", address, offline_message.protocol);
 		} else {
 			//IP header size (20 bytes) + UDP header size (8 bytes)
 			self.server.send_packet(&OpenConnectionReply1::create(
-				self.server.get_id(), false, offline_message.mtu_size + 28
+				self.server.id, false, offline_message.mtu_size + 28
 			), address);
 		}
 	}
@@ -99,14 +102,14 @@ impl Handle<OpenConnectionRequest1> for UnconnectedMessageHandler<'_> {
 
 impl Handle<OpenConnectionRequest2> for UnconnectedMessageHandler<'_> {
 	fn handle(&mut self, offline_message: &OpenConnectionRequest2, address: &SocketAddr) {
-		if offline_message.server_address.port() == self.server.get_port() || !self.server.get_port_checking() {
-			if (offline_message.mtu_size as usize) < Session::MIN_MTU_SIZE {
+		if offline_message.server_address.port() == self.server.get_port() || !self.server.port_checking {
+			if (offline_message.mtu_size as usize) < SessionMutable::MIN_MTU_SIZE {
 				debug!("Not creating session for {} due to bad MTU size {}", address, offline_message.mtu_size);
 				return;
 			}
-			let mtu_size = min(offline_message.mtu_size, self.server.get_max_mtu_size() as u16);
+			let mtu_size = min(offline_message.mtu_size, self.server.max_mtu_size as u16);
 			self.server.send_packet(&OpenConnectionReply2::create(
-					self.server.get_id(),
+					self.server.id,
 					address.to_owned(),
 					mtu_size,
 					false

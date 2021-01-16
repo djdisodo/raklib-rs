@@ -9,7 +9,7 @@ mod session;
 mod unconnected_message_handler;
 
 pub use protocol_acceptor::ProtocolAcceptor;
-pub use server::Server;
+pub use server::*;
 pub use server_event::ServerEvent;
 pub use server_event_listener::ServerEventListener;
 pub use server_interface::ServerInterface;

@@ -1,6 +1,5 @@
 use crate::protocol::{EncodeBody, DecodeBody, MessageIdentifierHeader};
 use bytes::{BufMut, Buf};
-use std::io::Read;
 
 #[derive(Default, Debug)]
 pub struct OfflineMessage {

@@ -14,7 +14,7 @@ pub type RaknetTime = Duration;
 
 #[cfg(test)]
 mod tests {
-    use crate::protocol::packet::IncompatibleProtocolVersion;
+    use crate::protocol::IncompatibleProtocolVersion;
     use crate::protocol::EncodeBody;
 
     #[test]
@@ -25,5 +25,3 @@ mod tests {
         println!("done");
     }
 }
-
-

@@ -1,4 +1,3 @@
-use std::ops::{Deref, DerefMut};
 use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, OfflineMessage, OfflineMessageImpl, CommonPacket};
 use bytes::{BufMut, Buf};
 

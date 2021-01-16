@@ -1,5 +1,5 @@
 use std::collections::{VecDeque, HashMap};
-use crate::protocol::{EncapsulatedPacket, PacketReliability, Datagram, EncodePacket, MessageIdentifierHeader, ACK, NACK, PacketImpl, Packet};
+use crate::protocol::{EncapsulatedPacket, PacketReliability, Datagram, ACK, NACK, PacketImpl, Packet};
 use log::debug;
 use std::ops::{RangeInclusive, RangeBounds};
 use std::iter::repeat;

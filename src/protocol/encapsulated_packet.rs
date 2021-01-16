@@ -4,7 +4,6 @@ use crate::protocol::PacketReliability;
 use bytes_addition::{PutTriad, GetTriad};
 use crate::protocol::SplitPacketInfo;
 use std::convert::TryInto;
-use std::io::Read;
 
 #[derive(Clone, Default, Debug)]
 pub struct EncapsulatedPacket {

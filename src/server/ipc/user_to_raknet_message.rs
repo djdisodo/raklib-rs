@@ -6,7 +6,7 @@ use std::time::Duration;
 pub enum UserToRaknetMessage {
 	Encapsulated {
 		session_id: usize,
-		packet: EncapsulatedPacket,
+		packet: Box<EncapsulatedPacket>,
 		immediate: bool
 	},
 	CloseSession {
@@ -24,6 +24,5 @@ pub enum UserToRaknetMessage {
 	RawFilter(Regex),
 	SetName(String),
 	SetPortCheck(bool),
-	SetPacketsPerTickLimit(usize),
-	Shutdown
+	SetPacketsPerTickLimit(usize)
 }

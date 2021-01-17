@@ -1,4 +1,4 @@
-use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, UnconnectedPing, CommonPacket};
+use crate::protocol::{MessageIdentifierHeader, EncodeBody, DecodeBody, MessageIdentifiers, UnconnectedPing, CommonPacket, OfflineMessageImpl, OfflineMessage};
 use bytes::{BufMut, Buf};
 
 #[derive(Debug, Deref, DerefMut)]
@@ -25,3 +25,9 @@ impl DecodeBody for UnconnectedPingOpenConnections {
 }
 
 impl CommonPacket for UnconnectedPingOpenConnections {}
+
+impl OfflineMessageImpl for UnconnectedPingOpenConnections {
+	fn get_offline_message(&self) -> &OfflineMessage {
+		self.get_offline_message()
+	}
+}

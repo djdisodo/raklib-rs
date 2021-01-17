@@ -54,28 +54,24 @@ use std::fmt::Debug;
 use crate::RaknetTime;
 use std::net::{SocketAddr, SocketAddrV6, SocketAddrV4, Ipv4Addr, Ipv6Addr};
 use c_types::AF_INET6;
+use downcast_rs::{impl_downcast, Downcast};
 
-pub trait PacketImpl: Debug + EncodePacket {
+pub trait PacketImpl: Debug + EncodePacket + Send + Sync + 'static + Downcast {
 	fn into_dyn(self) -> Packet where Self: Sized + 'static {
 		Box::new(self)
 	}
 }
+impl_downcast!(PacketImpl);
 
 pub type Packet = Box<dyn PacketImpl>;
 
-/*impl<T: PacketImpl + EncodePacket> EncodePacket for Box<T> {
+impl EncodePacket for Packet {
 	fn encode_packet(&self, serializer: &mut dyn BufMut) {
-		(*self).encode_packet(serializer);
+		(**self).encode_packet(serializer);
 	}
 }
 
-impl<T: PacketImpl + DecodePacket> DecodePacket for Box<T> {
-	fn decode_packet(serializer: &mut dyn Buf) -> Self {
-		Box::new(T::decode_packet(serializer))
-	}
-}*/
-
-impl<T: Debug + EncodePacket> PacketImpl for T {}
+impl<T: Debug + EncodePacket + Send + Sync + 'static> PacketImpl for T {}
 
 pub trait CommonPacket: EncodeHeader + EncodeBody + DecodeBody {}
 

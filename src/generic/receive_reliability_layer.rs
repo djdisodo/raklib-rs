@@ -5,9 +5,9 @@ use std::ops::RangeInclusive;
 use std::iter::repeat;
 
 pub struct ReceiveReliabilityLayer<'a> {
-	on_recv: Box<dyn Fn(&mut EncapsulatedPacket) -> () + 'a>,
+	on_recv: Box<dyn Fn(&mut EncapsulatedPacket) -> () + Send + Sync + 'a>,
 
-	send_packet: Box<dyn Fn(Packet) -> () + 'a>,
+	send_packet: Box<dyn Fn(Packet) -> () + Send + Sync + 'a>,
 
 	window_start: usize,
 	window_end: usize,
@@ -36,8 +36,8 @@ impl<'a> ReceiveReliabilityLayer<'a> {
 	pub const WINDOW_SIZE: usize = 2048;
 
 	pub fn new(
-		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'a,
-		send_packet: impl Fn(Packet) -> () + 'a
+		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + Send + Sync + 'a,
+		send_packet: impl Fn(Packet) -> () + Send + Sync + 'a
 	) -> Self {
 		Self::with_split_limit(
 			on_recv,
@@ -48,8 +48,8 @@ impl<'a> ReceiveReliabilityLayer<'a> {
 	}
 
 	pub fn with_split_limit(
-		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + 'a,
-		send_packet: impl Fn(Packet) -> () + 'a,
+		on_recv: impl Fn(&mut EncapsulatedPacket) -> () + Send + Sync + 'a,
+		send_packet: impl Fn(Packet) -> () + Send + Sync + 'a,
 		max_split_packet_part_count: usize,
 		max_concurrent_split_packets: usize
 	) -> Self {
@@ -144,7 +144,7 @@ impl<'a> ReceiveReliabilityLayer<'a> {
 		Some(pk)
 	}
 
-	fn handle_encapsulated_packet(&mut self, mut packet: EncapsulatedPacket) {
+	pub(crate) fn handle_encapsulated_packet(&mut self, mut packet: EncapsulatedPacket) {
 		if let Some(message_index) = packet.message_index.map(| i | i as usize) {
 			if
 				!self.reliable_window_range().contains(&message_index) ||

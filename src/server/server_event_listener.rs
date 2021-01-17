@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 use crate::server::ServerEvent;
 
-pub trait ServerEventListener {
+pub trait ServerEventListener: Send + Sync {
 	fn handle_event(&mut self, event: ServerEvent) {
 		match event {
 			ServerEvent::ClientConnect {
@@ -63,7 +63,7 @@ pub trait ServerEventListener {
 	fn on_client_disconnect(&mut self, session_id: usize, reason: &str);
 	fn on_packet_receive(&mut self, session_id: usize, packet: &[u8]);
 	fn on_raw_packet_receive(&mut self, address: SocketAddr, payload: &[u8]);
-	fn on_packet_ack(&mut self, session_id: usize, identifier_ack: u32);
+	fn on_packet_ack(&mut self, session_id: usize, identifier_ack: u64);
 	fn on_bandwidth_stats_update(&mut self, bytes_sent_diff: usize, bytes_received_diff: usize);
 	fn on_ping_measure(&mut self, session_id: usize, latency: Duration);
 }

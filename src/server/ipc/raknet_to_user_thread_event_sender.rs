@@ -56,7 +56,7 @@ impl ServerEventListener for RaknetToUserThreadEventSender {
 	}
 
 	#[inline]
-	fn on_packet_ack(&mut self, session_id: usize, identifier_ack: u32) {
+	fn on_packet_ack(&mut self, session_id: usize, identifier_ack: u64) {
 		self.handle_event(ServerEvent::PacketAck {
 			session_id,
 			identifier_ack

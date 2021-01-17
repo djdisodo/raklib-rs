@@ -18,7 +18,7 @@ pub enum ServerEvent {
 	},
 	PacketAck {
 		session_id: usize,
-		identifier_ack: u32,
+		identifier_ack: u64,
 	},
 	BandwidthStatsUpdate {
 		bytes_sent_diff: usize,

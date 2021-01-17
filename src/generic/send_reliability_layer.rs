@@ -1,13 +1,13 @@
-use crate::protocol::{Datagram, EncapsulatedPacket, PacketReliability, SplitPacketInfo, ACK, NACK};
+use crate::protocol::{Datagram, EncapsulatedPacket, PacketReliability, SplitPacketInfo, ACK, NACK, PacketImpl};
 use crate::generic::ReliableCacheEntry;
 use std::collections::{HashMap, VecDeque};
 use std::mem::replace;
 use std::time::{SystemTime, Duration};
 
 pub struct SendReliabilityLayer<'a> {
-	send_datagram_callback: Box<dyn Fn(&mut Datagram) -> () + 'a>,
+	send_datagram_callback: Box<dyn Fn(&mut Datagram) -> () + Send + Sync + 'a>,
 
-	on_ack: Box<dyn Fn(u64) -> () + 'a>,
+	on_ack: Box<dyn Fn(u64) -> () + Send + Sync + 'a>,
 
 	mtu_size: usize,
 
@@ -32,8 +32,8 @@ pub struct SendReliabilityLayer<'a> {
 impl<'a> SendReliabilityLayer<'a> {
 	pub fn new(
 		mtu_size: usize,
-		send_datagram: impl Fn(&mut Datagram) -> () + 'a,
-		on_ack: impl Fn(u64) -> () + 'a
+		send_datagram: impl Fn(&mut Datagram) -> () + Send + Sync + 'a,
+		on_ack: impl Fn(u64) -> () + Send + Sync + 'a
 	) -> Self {
 		Self {
 			send_datagram_callback: Box::new(send_datagram),
@@ -213,5 +213,20 @@ impl<'a> SendReliabilityLayer<'a> {
 		}
 
 		self.send_queue();
+	}
+
+	pub(crate) fn queue_connected_packet(
+		&mut self,
+		packet: &impl PacketImpl,
+		reliability: PacketReliability,
+		order_channel: u8,
+		immediate: bool // default false
+	) {
+		let mut encapsulated = EncapsulatedPacket::default();
+		encapsulated.reliability = reliability;
+		encapsulated.order_channel = Some(order_channel);
+		packet.encode_packet(&mut encapsulated.buffer);
+
+		self.add_encapsulated_to_queue(encapsulated, immediate);
 	}
 }

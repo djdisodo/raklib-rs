@@ -1,7 +1,8 @@
-use crate::protocol::{EncodeBody, DecodeBody, MessageIdentifierHeader};
+use crate::protocol::{EncodeBody, DecodeBody, PacketImpl};
 use bytes::{BufMut, Buf};
+use downcast_rs::impl_downcast;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct OfflineMessage {
 	pub magic: [u8; 16]
 }
@@ -14,9 +15,17 @@ impl OfflineMessage {
 	}
 }
 
+impl Default for OfflineMessage {
+	fn default() -> Self {
+		Self {
+			magic: Self::MAGIC
+		}
+	}
+}
+
 impl EncodeBody for OfflineMessage {
 	fn encode_body(&self, serializer: &mut dyn BufMut) {
-		serializer.put_slice(&Self::MAGIC);
+		serializer.put_slice(&self.magic);
 	}
 }
 
@@ -30,7 +39,7 @@ impl DecodeBody for OfflineMessage {
 	}
 }
 
-pub trait OfflineMessageImpl: MessageIdentifierHeader {
+pub trait OfflineMessageImpl: PacketImpl {
 	fn get_offline_message(&self) -> &OfflineMessage;
 	fn is_valid(&self) -> bool {
 		self.get_offline_message().is_valid()

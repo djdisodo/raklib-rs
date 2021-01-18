@@ -30,7 +30,7 @@ impl OfflineMessageImpl for OpenConnectionReply2 {
 }
 
 impl MessageIdentifierHeader for OpenConnectionReply2 {
-	const ID: MessageIdentifiers = MessageIdentifiers::OpenConnectionReply1;
+	const ID: MessageIdentifiers = MessageIdentifiers::OpenConnectionReply2;
 }
 
 impl EncodeBody for OpenConnectionReply2 {

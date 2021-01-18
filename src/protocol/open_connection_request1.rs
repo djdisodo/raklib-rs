@@ -28,13 +28,11 @@ impl EncodeBody for OpenConnectionRequest1 {
 
 impl DecodeBody for OpenConnectionRequest1 {
 	fn decode_body(serializer: &mut dyn Buf) -> Self {
-		let ret = Self {
+		Self {
 			offline_message: OfflineMessage::decode_body(serializer),
 			protocol: serializer.get_u8(),
 			mtu_size: serializer.remaining() as u16
-		};
-		serializer.advance(serializer.remaining()); // silence unread warnings
-		ret
+		}
 	}
 }
 
@@ -50,6 +48,9 @@ impl EncodePacket for OpenConnectionRequest1 {
 impl DecodePacket for OpenConnectionRequest1 {
 	fn decode_packet(serializer: &mut dyn Buf) -> Self {
 		let original = serializer.remaining();
+		if Self::ID as u8 != serializer.get_u8() {
+			panic!("message identifier doesn't match");
+		}
 		let packet = Self::decode_body(serializer);
 		let read = original - serializer.remaining();
 		serializer.advance(packet.mtu_size as usize - read);

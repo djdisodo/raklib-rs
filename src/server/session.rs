@@ -79,7 +79,7 @@ impl<'a> SessionInternal<'a> {
 
 			last_update: Instant::now(),
 			is_active: false,
-			last_ping_time: Instant::now() - SystemTime::UNIX_EPOCH.elapsed().unwrap(),
+			last_ping_time: Instant::now() - Duration::from_secs(6), // *never
 
 			recv_layer: ReceiveReliabilityLayer::with_split_limit(
 				move | pk | {
@@ -106,7 +106,7 @@ impl<'a> SessionInternal<'a> {
 
 		let mut state = self.export.state.lock();
 
-		if let SessionState::Disconnecting { disconnection_time } = *self.state.lock() {
+		if let SessionState::Disconnecting { disconnection_time } = *state {
 			//by this point we already told the event listener that the session is closing, so we don't need to do it again
 			if !self.recv_layer.needs_update() && !send_layer.needs_update() {
 				*state = SessionState::Disconnected {

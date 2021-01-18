@@ -186,12 +186,11 @@ impl<'a> ServerInternal<'a> {
 		if buffer.len() == 0 {
 			return;
 		}
-		if let Ok(id) = MessageIdentifiers::try_from(buffer[0]) {
-			println!("recv: {:?}", id);
+		debug!("recv: {} from {}", if let Ok(id) = MessageIdentifiers::try_from(buffer[0]) {
+			format!("{:?}", id)
 		} else {
-			println!("recv: {:#04x}", buffer[0]);
-		}
-		println!("from {}", address);
+			format!("{:#04x}", buffer[0])
+		}, address);
 		match self.session_ids_by_address.get(&address).cloned() {
 			Some(session_id) => {
 				let session = self.sessions[session_id].as_ref().unwrap();
@@ -205,14 +204,15 @@ impl<'a> ServerInternal<'a> {
 						session.get_mut().handle_datagram(Datagram::decode_packet(&mut buffer));
 					}
 				} else {
-					debug!("Ignored unconnected packet from $address due to session already opened (0x{})", format!("{:X}", header))
+					debug!("Ignored unconnected packet from {} due to session already opened ({})", address, if let Ok(id) = MessageIdentifiers::try_from(header) {
+						format!("{:?}", id)
+					} else {
+						format!("{:#04x}", buffer[0])
+					})
 				}
 			},
 			None => if !self.shutdown {
 				let mut handled = self.handle_raw(&address, buffer);
-				if handled {
-					println!("handled");
-				}
 				if !handled {
 					for x in &self.raw_packet_filters {
 						if x.find(&buffer).is_some() {
@@ -252,7 +252,7 @@ impl<'a> ServerInternal<'a> {
 
 		self.sessions[session_id] = Some(Session::new(self.export.clone(), address.clone(), client_id, mtu_size, session_id));
 		self.session_ids_by_address.insert(address, session_id);
-		debug!("Created session for $address with MTU size {}", mtu_size);
+		debug!("Created session for {} with MTU size {}", address, mtu_size);
 	}
 
 	fn remove_session_internal(&mut self, session_id: usize) {
@@ -440,15 +440,16 @@ impl<'a> ServerExport<'a> {
 	}
 
 	pub fn send_packet(&self, packet: &impl PacketImpl, address: &SocketAddr) {
-		println!("send: {:?}", packet);
 		let mut buffer = self.send_buffer.lock();
 		buffer.clear();
 		packet.encode_packet(&mut *buffer);
+		debug!("send: {} to {}", if let Ok(id) = MessageIdentifiers::try_from(buffer[0]) {
+			format!("{:?}", id)
+		} else {
+			format!("{:#04x}", buffer[0])
+		}, address);
 		match self.udp_socket.send_to(&*buffer, address) {
-			Ok(send) => {
-				println!("sent: {} to {}", send, address);
-				*self.send_bytes.lock() += send
-			},
+			Ok(send) => *self.send_bytes.lock() += send,
 			Err(e) => debug!("{}", e)
 		}
 	}
